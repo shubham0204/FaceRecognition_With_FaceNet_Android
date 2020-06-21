@@ -1,4 +1,7 @@
 
+>> **Store images of people who you would like to recognize and the app, using these images, will classify those people. We don't need to modify the app/retrain any ML model to add more people ( subjects ) for classification**
+
+
 # Face Recognition and Classification With FaceNet On Android
 
 If you're ML developer, you might have heard about FaceNet, Google's state-of-the-art model for generating face embeddings. In this 
@@ -36,9 +39,9 @@ images ->
 The app will then process these images and classify these people thereafter. For face recognition, Firebase MLKit is used which 
 fetches bounding boxes for all the faces present in the camera frame.
 
->> This is different from existing face recognition apps as the user does not programme the app in such to recognize only a 
->> fixed number of persons. If a new person is to be recognized, the system ( app ) has to be modified to include the new person as 
->> well.
+> This is different from existing face recognition apps as the user does not programme the app in such to recognize only a 
+fixed number of persons. If a new person is to be recognized, the system ( app ) has to be modified to include the new person as 
+well.
 
 ## Working
 
@@ -67,7 +70,7 @@ text.
 1. [Firebase MLKit](https://firebase.google.com/docs/ml-kit/detect-faces) for face recognition.
 2. [TensorFlow Lite Android](https://www.tensorflow.org/lite)
 3. [TensorFlow Lite Android Support Library](https://github.com/tensorflow/tensorflow/tree/master/tensorflow/lite/experimental/support/java)
-4. [CameraX](https://developer.android.com/training/camerax
+4. [CameraX](https://developer.android.com/training/camerax)
 
 
 
