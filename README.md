@@ -1,11 +1,16 @@
 
 >> **Store images of people who you would like to recognize and the app, using these images, will classify those people. We don't need to modify the app/retrain any ML model to add more people ( subjects ) for classification**
 
+Read the story on [Medium](https://medium.com/@equipintelligence/using-facenet-for-on-device-face-recognition-with-android-f84e36e19761).
+
+![](images/final_result.PNG)
+
 
 # Face Recognition and Classification With FaceNet On Android
 
 If you're ML developer, you might have heard about FaceNet, Google's state-of-the-art model for generating face embeddings. In this 
 project, we'll use the FaceNet model on Android and generate embeddings ( fixed size vectors ) which hold information of the face.
+
 
 ## About FaceNet
 
