@@ -1,4 +1,7 @@
 
+[![forthebadge](https://forthebadge.com/images/badges/built-for-android.svg)](https://forthebadge.com)
+
+
 >> **Store images of people who you would like to recognize and the app, using these images, will classify those people. We don't need to modify the app/retrain any ML model to add more people ( subjects ) for classification**
 
 Read the story on [Medium](https://medium.com/@equipintelligence/using-facenet-for-on-device-face-recognition-with-android-f84e36e19761).
@@ -76,10 +79,4 @@ text.
 2. [TensorFlow Lite Android](https://www.tensorflow.org/lite)
 3. [TensorFlow Lite Android Support Library](https://github.com/tensorflow/tensorflow/tree/master/tensorflow/lite/experimental/support/java)
 4. [CameraX](https://developer.android.com/training/camerax)
-
-
-
-
-
-
 
