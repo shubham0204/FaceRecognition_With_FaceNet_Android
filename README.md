@@ -2,7 +2,6 @@
 
 >> **Store images of people who you would like to recognize and the app, using these images, will classify those people. We don't need to modify the app/retrain any ML model to add more people ( subjects ) for classification**
 
-Read the story on [Medium]().
 
 ![](images/final_result.PNG)
 
@@ -70,6 +69,12 @@ the frame using these boxes.
 scores for all subjects ( which we stored earlier as `HashMap<String,FloatArray>` ). The one with highest similarity is 
 determined. The final output is then stored as a `Prediction` and passed to the `BoundingBoxOverlay` which draws boxes and 
 text.
+
+## Firebase Services
+
+The app uses Firebase MLKit API, so you'll need to connect this app to a Firebase project. You may update the Firebase dependencies and make sure you add the google-services.json file to the app.
+
+See the [instructions from Firebase](https://firebase.google.com/docs/android/setup).
 
 ## Libraries
 
