@@ -21,7 +21,7 @@ import kotlin.math.pow
 import kotlin.math.sqrt
 
 // Analyser class to process frames and produce detections.
-class FrameAnalyser( context: Context , private var boundingBoxOverlay: BoundingBoxOverlay ) : ImageAnalysis.Analyzer {
+class FrameAnalyser( private var context: Context , private var boundingBoxOverlay: BoundingBoxOverlay ) : ImageAnalysis.Analyzer {
 
     // Configure the FirebaseVisionFaceDetector
     private val realTimeOpts = FirebaseVisionFaceDetectorOptions.Builder()
@@ -33,17 +33,32 @@ class FrameAnalyser( context: Context , private var boundingBoxOverlay: Bounding
     private var isProcessing = AtomicBoolean(false)
 
     // FirebaseImageMeta for defining input image params.
-    private val metadata = FirebaseVisionImageMetadata.Builder()
+    private var metadata = FirebaseVisionImageMetadata.Builder()
         .setWidth(640)
         .setHeight(480)
         .setFormat(FirebaseVisionImageMetadata.IMAGE_FORMAT_NV21 )
-        .setRotation(degreesToFirebaseRotation(90))
+        .setRotation(degreesToFirebaseRotation(270))
         .build()
 
     // Store the face embeddings in a ( String , FloatArray ) Hashmap.
     // Where String -> name of the person abd FloatArray -> Embedding of the face.
     var faceList = HashMap<String,FloatArray>()
 
+    // Boolean value to check whether the user has enabled auto mode.
+    var isAutoMode = false
+
+    // Store newly found faces in ( Name , Embedding ) form.
+    private val autoRecognitionFaceList =HashMap<String,FloatArray>()
+
+    // Number of users uniquely identified by the Auto Mode.
+    private var autoRecognizedUsersCount : Int = 0
+
+    // Threshold to determine whether the face belongs to a new user or an existing one.
+    // If the similarity score is smaller than this threshold, then a new name will be assigned to the user and will
+    // be appended in autoRecognitionFaceList
+    private val AUTO_RECOGNITION_THRESHOLD = 0.6f
+
+    // FaceNet model utility class
     private val model = FaceNetModel( context )
 
     // Here's where we receive our frames.
@@ -60,6 +75,7 @@ class FrameAnalyser( context: Context , private var boundingBoxOverlay: Bounding
             // Declare that the current frame is being processed.
             isProcessing.set(true)
 
+            Log.e( "Infoooooooooooooo " , rotationDegrees.toString() )
             // Perform face detection
             val inputImage = FirebaseVisionImage.fromByteArray( BitmaptoNv21( bitmap ) , metadata )
             detector.detectInImage(inputImage)
@@ -74,29 +90,69 @@ class FrameAnalyser( context: Context , private var boundingBoxOverlay: Bounding
                                 // Finally, feed the ByteBuffer to the FaceNet model.
                                 val subject = model.getFaceEmbedding( bitmap , face.boundingBox , true )
                                 Log.i( "Model" , "New frame received.")
-                                // Determine index and value of the highest similarity score.
-                                var highestSimilarityScore = -1f
-                                var highestSimilarityScoreName = ""
-                                for ( ( name , embedding ) in faceList ) {
-                                    val p = cosineSimilarity( subject , embedding )
-                                    Log.i( "Model" , "Similarity score for ${name} is ${p}.")
-                                    if ( p > highestSimilarityScore ) {
-                                        highestSimilarityScore = p
-                                        highestSimilarityScoreName = name
+
+                                // Auto recognition mode
+                                if ( isAutoMode ){
+
+                                    // Determine index and value of the highest similarity score.
+                                    var highestSimilarityScore = -1f
+                                    var highestSimilarityScoreName = ""
+                                    for ( ( name , embedding ) in autoRecognitionFaceList ) {
+                                        val p = cosineSimilarity( subject , embedding )
+                                        Log.i( "Model" , "Similarity score for ${name} is ${p}.")
+                                        if ( p > highestSimilarityScore ) {
+                                            highestSimilarityScore = p
+                                            highestSimilarityScoreName = name
+                                        }
+                                    }
+
+                                    // If the highest similarity is smaller than the threshold, we assume that
+                                    // this face belongs to a new user.
+                                    if ( highestSimilarityScore <= AUTO_RECOGNITION_THRESHOLD ) {
+                                        // Update the users' count.
+                                        autoRecognizedUsersCount += 1
+                                        // Append the user to autoRecognitionFaceList
+                                        autoRecognitionFaceList[ "user$autoRecognizedUsersCount" ] = subject
+                                        // Show a message on the screen
+                                        MainActivity.setMessage( "New User added." )
+                                    }
+                                    else {
+                                        // The face belongs oto an existing user. Show the name and the box on the
+                                        // overlay.
+                                        predictions.add(
+                                            Prediction(
+                                                face.boundingBox,
+                                                highestSimilarityScoreName
+                                            )
+                                        )
                                     }
                                 }
-                                Log.i( "Model" , "Person identified as ${highestSimilarityScoreName} with " +
-                                        "confidence of ${highestSimilarityScore * 100} %" )
-                                // Push the results in form of a Prediction.
-                                predictions.add(
-                                    Prediction(
-                                        face.boundingBox,
-                                        highestSimilarityScoreName
+                                else {
+                                    // Determine index and value of the highest similarity score.
+                                    var highestSimilarityScore = -1f
+                                    var highestSimilarityScoreName = ""
+                                    for ( ( name , embedding ) in faceList ) {
+                                        val p = cosineSimilarity( subject , embedding )
+                                        Log.i( "Model" , "Similarity score for ${name} is ${p}.")
+                                        if ( p > highestSimilarityScore ) {
+                                            highestSimilarityScore = p
+                                            highestSimilarityScoreName = name
+                                        }
+                                    }
+                                    Log.i( "Model" , "Person identified as ${highestSimilarityScoreName} with " +
+                                            "confidence of ${highestSimilarityScore * 100} %" )
+                                    // Push the results in form of a Prediction.
+                                    predictions.add(
+                                        Prediction(
+                                            face.boundingBox,
+                                            highestSimilarityScoreName
+                                        )
                                     )
-                                )
+                                }
+
                             }
                             catch ( e : Exception ) {
-                                // If any exception occurs if this box and continue with the next boxes.
+                                // If any exception occurs with this box and continue with the next boxes.
                                 continue
                             }
                         }
@@ -118,12 +174,12 @@ class FrameAnalyser( context: Context , private var boundingBoxOverlay: Bounding
 
     private fun saveBitmap(image: Bitmap, name: String) {
         val fileOutputStream =
-            FileOutputStream(File(Environment.getExternalStorageDirectory().absolutePath + "/$name.png"))
+            FileOutputStream(File( Environment.getExternalStorageDirectory()!!.absolutePath + "/$name.png"))
         image.compress(Bitmap.CompressFormat.PNG, 100, fileOutputStream)
     }
 
     // Cosine similarity for two vectors ( face embeddings ).
-    // cosineSimilarity = embedding1.dot( embedding2 ) / | embedding1 || embedding2 |
+    // cosineSimilarity = embedding1.dot( embedding2 ) / ||embedding1|| * ||embedding2||
     private fun cosineSimilarity( x1 : FloatArray , x2 : FloatArray ) : Float {
         var dotProduct = 0.0f
         var mag1 = 0.0f

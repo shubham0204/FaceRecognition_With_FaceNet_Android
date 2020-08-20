@@ -63,7 +63,7 @@ class BoundingBoxOverlay( context: Context , attributeSet: AttributeSet )
                     processedBbox.centerY() ,
                     textPaint
                 )
-                Log.e( "App" , "Rect ${face.bbox.toShortString()}")
+                Log.e( "Info" , "Rect received ${processedBbox.toShortString()}")
             }
         }
     }

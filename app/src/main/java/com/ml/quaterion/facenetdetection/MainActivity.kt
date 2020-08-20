@@ -2,12 +2,15 @@ package com.ml.quaterion.facenetdetection
 
 import android.Manifest
 import android.app.ProgressDialog
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Matrix
+import android.net.Uri
 import android.os.Bundle
 import android.os.Environment
+import android.provider.DocumentsContract
 import android.util.Log
 import android.util.Size
 import android.view.Surface
@@ -51,6 +54,10 @@ class MainActivity : AppCompatActivity() {
         // Implementation of CameraX preview
         
         cameraTextureView = findViewById( R.id.camera_textureView )
+        val boundingBoxOverlay = findViewById<BoundingBoxOverlay>( R.id.bbox_overlay )
+        val autoModeButton = findViewById<Button>( R.id.auto_mode_button )
+        logTextView = findViewById( R.id.logTextView )
+
         if (allPermissionsGranted()) {
             cameraTextureView.post { startCamera() }
         }
@@ -60,19 +67,32 @@ class MainActivity : AppCompatActivity() {
         cameraTextureView.addOnLayoutChangeListener { _, _, _, _, _, _, _, _, _ ->
             updateTransform()
         }
-        
-        val boundingBoxOverlay = findViewById<BoundingBoxOverlay>( R.id.bbox_overlay )
-
-        //This view's VISIBILITY is set to View.GONE in activity_main.xml
-        logTextView = findViewById( R.id.logTextView )
 
         // Necessary to keep the Overlay above the TextureView so that the boxes are visible.
         boundingBoxOverlay.setWillNotDraw( false )
         boundingBoxOverlay.setZOrderOnTop( true )
         frameAnalyser = FrameAnalyser( this , boundingBoxOverlay)
 
-        // Read image data
-        scanStorageForImages()
+        if ( ActivityCompat.checkSelfPermission( this , Manifest.permission.WRITE_EXTERNAL_STORAGE ) ==
+                PackageManager.PERMISSION_GRANTED ){
+            // Read image data
+            scanStorageForImages()
+        }
+
+        autoModeButton.setOnClickListener {
+            when( frameAnalyser.isAutoMode ) {
+                true -> {
+                    frameAnalyser.isAutoMode = false
+                    Toast.makeText( this , "Auto Recognition mode disabled" , Toast.LENGTH_LONG ).show()
+                    autoModeButton.text = "Enable Auto Mode"
+                }
+                false -> {
+                    frameAnalyser.isAutoMode = true
+                    Toast.makeText( this , "Auto Recognition mode enabled" , Toast.LENGTH_LONG ).show()
+                    autoModeButton.text = "Disable Auto Mode"
+                }
+            }
+        }
 
     }
 
@@ -95,38 +115,44 @@ class MainActivity : AppCompatActivity() {
             progressDialog.setMessage( "Loading images ..." )
             progressDialog.show()
 
-            val imagesDir = File( Environment.getExternalStorageDirectory().absolutePath + "/images" )
+            val imagesDir = File( Environment.getExternalStorageDirectory()!!.absolutePath + "/images" )
             val imageSubDirs = imagesDir.listFiles()
 
-            val subDirNames = imageSubDirs.map { file -> file.name }
-            val subjectImages = imageSubDirs.map { file -> BitmapFactory.decodeFile( file.listFiles()[0].absolutePath ) }
-            var imageCounter = 0
-            val successListener = OnSuccessListener<List<FirebaseVisionFace?>> { faces ->
-                if ( faces.isNotEmpty() ) {
-                    imageData[ subDirNames[ imageCounter ] ] =
-                        model.getFaceEmbedding( subjectImages[ imageCounter ] , faces[0]!!.boundingBox , false )
-                    imageCounter += 1
-                    // Make sure the frameAnalyser uses the given data!
-                    frameAnalyser.faceList = imageData
-                    if ( imageCounter == imageSubDirs.size ) {
-                        progressDialog.dismiss()
+            if ( imageSubDirs == null ) {
+                Toast.makeText( this , "Could not read images. Make sure you've have a folder as described in the README" ,
+                        Toast.LENGTH_LONG ).show()
+                return
+            }
+            else {
+                val subDirNames = imageSubDirs.map { file -> file.name }
+                val subjectImages = imageSubDirs.map { file -> BitmapFactory.decodeFile( file.listFiles()[0].absolutePath ) }
+                var imageCounter = 0
+                val successListener = OnSuccessListener<List<FirebaseVisionFace?>> { faces ->
+                    if ( faces.isNotEmpty() ) {
+                        imageData[ subDirNames[ imageCounter ] ] =
+                                model.getFaceEmbedding( subjectImages[ imageCounter ] , faces[0]!!.boundingBox , false )
+                        imageCounter += 1
+                        // Make sure the frameAnalyser uses the given data!
+                        frameAnalyser.faceList = imageData
+                        if ( imageCounter == imageSubDirs.size ) {
+                            progressDialog.dismiss()
+                        }
                     }
                 }
+                for ( image in subjectImages ) {
+                    val metadata = FirebaseVisionImageMetadata.Builder()
+                            .setWidth( image.width )
+                            .setHeight( image.height )
+                            .setFormat(FirebaseVisionImageMetadata.IMAGE_FORMAT_NV21 )
+                            .setRotation( FirebaseVisionImageMetadata.ROTATION_0 )
+                            .build()
+                    val inputImage = FirebaseVisionImage.fromByteArray( bitmapToNV21( image ) , metadata )
+                    detector.detectInImage( inputImage ).addOnSuccessListener( successListener )
+                }
             }
-            for ( image in subjectImages ) {
-                val metadata = FirebaseVisionImageMetadata.Builder()
-                    .setWidth( image.width )
-                    .setHeight( image.height )
-                    .setFormat(FirebaseVisionImageMetadata.IMAGE_FORMAT_NV21 )
-                    .setRotation( FirebaseVisionImageMetadata.ROTATION_0 )
-                    .build()
-                val inputImage = FirebaseVisionImage.fromByteArray( bitmapToNV21( image ) , metadata )
-                detector.detectInImage( inputImage ).addOnSuccessListener( successListener )
-            }
+
+
         }
-
-
-
 
     }
 

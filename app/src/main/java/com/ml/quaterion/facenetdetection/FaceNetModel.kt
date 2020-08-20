@@ -49,7 +49,7 @@ class FaceNetModel( context : Context ) {
     private fun convertBitmapToBuffer( image : Bitmap) : ByteBuffer {
         val imageByteBuffer = ByteBuffer.allocateDirect( 1 * imgSize * imgSize * 3 * 4 )
         imageByteBuffer.order( ByteOrder.nativeOrder() )
-        val resizedImage = Bitmap.createScaledBitmap(image, imgSize , imgSize, false)
+        val resizedImage = Bitmap.createScaledBitmap(image, imgSize , imgSize, true)
         for (x in 0 until imgSize) {
             for (y in 0 until imgSize) {
                 val pixelValue = resizedImage.getPixel( x , y )
