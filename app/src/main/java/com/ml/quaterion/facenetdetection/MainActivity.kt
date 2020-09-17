@@ -129,6 +129,7 @@ class MainActivity : AppCompatActivity() {
                 var imageCounter = 0
                 val successListener = OnSuccessListener<List<FirebaseVisionFace?>> { faces ->
                     if ( faces.isNotEmpty() ) {
+                        Log.e( "App" , "${subDirNames[imageCounter]}")
                         imageData[ subDirNames[ imageCounter ] ] =
                                 model.getFaceEmbedding( subjectImages[ imageCounter ] , faces[0]!!.boundingBox , false )
                         imageCounter += 1

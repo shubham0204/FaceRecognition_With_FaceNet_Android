@@ -10,7 +10,7 @@ import org.tensorflow.lite.support.common.FileUtil
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 
-// Utility class for FaceNet mdoel
+// Utility class for FaceNet model
 class FaceNetModel( context : Context ) {
 
     // TFLiteInterpreter used for running the FaceNet model.
@@ -63,14 +63,22 @@ class FaceNetModel( context : Context ) {
 
     // Crop the given bitmap with the given rect.
     private fun cropRectFromBitmap(source: Bitmap, rect: Rect , preRotate : Boolean ): Bitmap {
-        val cropped = Bitmap.createBitmap(
-            if ( preRotate ) rotateBitmap( source , 90f )!! else source,
-            rect.left,
-            rect.top,
-            rect.width(),
-            rect.height()
+        Log.e( "App" , "rect ${source.width} , ${rect.left + rect.width()} ${rect.toShortString()}" )
+        var width = rect.width()
+        var height = rect.height()
+        if ( (rect.left + width) > source.width ){
+            width = source.width - rect.left
+        }
+        if ( (rect.top + height ) > source.height ){
+            height = source.height - rect.top
+        }
+        return Bitmap.createBitmap(
+                if ( preRotate ) rotateBitmap( source , 90f )!! else source,
+                rect.left,
+                rect.top,
+                width,
+                height
         )
-        return cropped
     }
 
     private fun rotateBitmap(source: Bitmap, angle: Float): Bitmap? {

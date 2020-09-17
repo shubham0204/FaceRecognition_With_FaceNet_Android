@@ -37,7 +37,7 @@ class FrameAnalyser( private var context: Context , private var boundingBoxOverl
         .setWidth(640)
         .setHeight(480)
         .setFormat(FirebaseVisionImageMetadata.IMAGE_FORMAT_NV21 )
-        .setRotation(degreesToFirebaseRotation(270))
+        .setRotation(degreesToFirebaseRotation(90))
         .build()
 
     // Store the face embeddings in a ( String , FloatArray ) Hashmap.

@@ -27,7 +27,7 @@ class BoundingBoxOverlay( context: Context , attributeSet: AttributeSet )
         preScale( xfactor , yfactor )
     }
 
-    // This var is assigned in FrameAnalyer.kt
+    // This var is assigned in FrameAnalyser.kt
     var faceBoundingBoxes : ArrayList<Prediction>? = null
 
     // Defines a Paint object for the boxes.
