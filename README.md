@@ -11,6 +11,8 @@
 If you're ML developer, you might have heard about FaceNet, Google's state-of-the-art model for generating face embeddings. In this 
 project, we'll use the FaceNet model on Android and generate embeddings ( fixed size vectors ) which hold information of the face.
 
+The accuracy of the face detection system ( with FaceNet ) may not have a considerable accuracy. As, under the hood, we are comparing angles between vectors, this model would not produce results with a very high accuracy.
+
 
 ## About FaceNet
 
