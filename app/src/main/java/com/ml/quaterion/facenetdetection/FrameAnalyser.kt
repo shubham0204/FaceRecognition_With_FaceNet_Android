@@ -40,23 +40,9 @@ class FrameAnalyser( private var context: Context , private var boundingBoxOverl
         .setRotation(degreesToFirebaseRotation(90))
         .build()
 
-    // Store the face embeddings in a ( String , FloatArray ) Hashmap.
+    // Store the face embeddings in a ( String , FloatArray ) ArrayList.
     // Where String -> name of the person abd FloatArray -> Embedding of the face.
-    var faceList = HashMap<String,FloatArray>()
-
-    // Boolean value to check whether the user has enabled auto mode.
-    var isAutoMode = false
-
-    // Store newly found faces in ( Name , Embedding ) form.
-    private val autoRecognitionFaceList =HashMap<String,FloatArray>()
-
-    // Number of users uniquely identified by the Auto Mode.
-    private var autoRecognizedUsersCount : Int = 0
-
-    // Threshold to determine whether the face belongs to a new user or an existing one.
-    // If the similarity score is smaller than this threshold, then a new name will be assigned to the user and will
-    // be appended in autoRecognitionFaceList
-    private val AUTO_RECOGNITION_THRESHOLD = 0.6f
+    var faceList = ArrayList<Pair<String,FloatArray>>()
 
     // FaceNet model utility class
     private val model = FaceNetModel( context )
@@ -75,7 +61,6 @@ class FrameAnalyser( private var context: Context , private var boundingBoxOverl
             // Declare that the current frame is being processed.
             isProcessing.set(true)
 
-            Log.e( "Infoooooooooooooo " , rotationDegrees.toString() )
             // Perform face detection
             val inputImage = FirebaseVisionImage.fromByteArray( BitmaptoNv21( bitmap ) , metadata )
             detector.detectInImage(inputImage)
@@ -91,65 +76,26 @@ class FrameAnalyser( private var context: Context , private var boundingBoxOverl
                                 val subject = model.getFaceEmbedding( bitmap , face.boundingBox , true )
                                 Log.i( "Model" , "New frame received.")
 
-                                // Auto recognition mode
-                                if ( isAutoMode ){
-
-                                    // Determine index and value of the highest similarity score.
-                                    var highestSimilarityScore = -1f
-                                    var highestSimilarityScoreName = ""
-                                    for ( ( name , embedding ) in autoRecognitionFaceList ) {
-                                        val p = cosineSimilarity( subject , embedding )
-                                        Log.i( "Model" , "Similarity score for ${name} is ${p}.")
-                                        if ( p > highestSimilarityScore ) {
-                                            highestSimilarityScore = p
-                                            highestSimilarityScoreName = name
-                                        }
+                                // Determine index and value of the highest similarity score.
+                                var highestSimilarityScore = -1f
+                                var highestSimilarityScoreName = ""
+                                for ( sample in faceList ) {
+                                    val p = cosineSimilarity( subject , sample.second )
+                                    Log.i( "Model" , "Similarity score for ${sample.first} is ${p}.")
+                                    if ( p > highestSimilarityScore ) {
+                                        highestSimilarityScore = p
+                                        highestSimilarityScoreName = sample.first
                                     }
-
-                                    // If the highest similarity is smaller than the threshold, we assume that
-                                    // this face belongs to a new user.
-                                    if ( highestSimilarityScore <= AUTO_RECOGNITION_THRESHOLD ) {
-                                        // Update the users' count.
-                                        autoRecognizedUsersCount += 1
-                                        // Append the user to autoRecognitionFaceList
-                                        autoRecognitionFaceList[ "user$autoRecognizedUsersCount" ] = subject
-                                        // Show a message on the screen
-                                        MainActivity.setMessage( "New User added." )
-                                    }
-                                    else {
-                                        // The face belongs oto an existing user. Show the name and the box on the
-                                        // overlay.
-                                        predictions.add(
-                                            Prediction(
+                                }
+                                Log.i( "Model" , "Person identified as ${highestSimilarityScoreName} with " +
+                                        "confidence of ${highestSimilarityScore * 100} %" )
+                                // Push the results in form of a Prediction.
+                                predictions.add(
+                                        Prediction(
                                                 face.boundingBox,
                                                 highestSimilarityScoreName
-                                            )
                                         )
-                                    }
-                                }
-                                else {
-                                    // Determine index and value of the highest similarity score.
-                                    var highestSimilarityScore = -1f
-                                    var highestSimilarityScoreName = ""
-                                    for ( ( name , embedding ) in faceList ) {
-                                        val p = cosineSimilarity( subject , embedding )
-                                        Log.i( "Model" , "Similarity score for ${name} is ${p}.")
-                                        if ( p > highestSimilarityScore ) {
-                                            highestSimilarityScore = p
-                                            highestSimilarityScoreName = name
-                                        }
-                                    }
-                                    Log.i( "Model" , "Person identified as ${highestSimilarityScoreName} with " +
-                                            "confidence of ${highestSimilarityScore * 100} %" )
-                                    // Push the results in form of a Prediction.
-                                    predictions.add(
-                                        Prediction(
-                                            face.boundingBox,
-                                            highestSimilarityScoreName
-                                        )
-                                    )
-                                }
-
+                                )
                             }
                             catch ( e : Exception ) {
                                 // If any exception occurs with this box and continue with the next boxes.

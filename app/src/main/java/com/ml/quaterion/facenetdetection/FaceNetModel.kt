@@ -4,9 +4,12 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Matrix
 import android.graphics.Rect
+import android.os.Environment
 import android.util.Log
 import org.tensorflow.lite.Interpreter
 import org.tensorflow.lite.support.common.FileUtil
+import java.io.File
+import java.io.FileOutputStream
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 
@@ -72,13 +75,21 @@ class FaceNetModel( context : Context ) {
         if ( (rect.top + height ) > source.height ){
             height = source.height - rect.top
         }
-        return Bitmap.createBitmap(
+        val croppedBitmap = Bitmap.createBitmap(
                 if ( preRotate ) rotateBitmap( source , 90f )!! else source,
                 rect.left,
                 rect.top,
                 width,
-                height
-        )
+                height )
+        saveBitmap( croppedBitmap , "cropped" )
+        return croppedBitmap
+
+    }
+
+    private fun saveBitmap(image: Bitmap, name: String) {
+        val fileOutputStream =
+                FileOutputStream(File( Environment.getExternalStorageDirectory()!!.absolutePath + "/$name.png"))
+        image.compress(Bitmap.CompressFormat.PNG, 100, fileOutputStream)
     }
 
     private fun rotateBitmap(source: Bitmap, angle: Float): Bitmap? {

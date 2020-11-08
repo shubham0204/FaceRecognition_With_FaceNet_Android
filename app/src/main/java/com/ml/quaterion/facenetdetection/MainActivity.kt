@@ -2,15 +2,12 @@ package com.ml.quaterion.facenetdetection
 
 import android.Manifest
 import android.app.ProgressDialog
-import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Matrix
-import android.net.Uri
 import android.os.Bundle
 import android.os.Environment
-import android.provider.DocumentsContract
 import android.util.Log
 import android.util.Size
 import android.view.Surface
@@ -30,13 +27,27 @@ import com.google.firebase.ml.vision.face.FirebaseVisionFaceDetectorOptions
 import java.io.*
 import java.util.concurrent.Executors
 
-
 class MainActivity : AppCompatActivity() {
 
     private val REQUEST_CODE_PERMISSIONS = 10
     private val REQUIRED_PERMISSIONS = arrayOf(Manifest.permission.CAMERA , Manifest.permission.WRITE_EXTERNAL_STORAGE )
     private lateinit var cameraTextureView : TextureView
     private lateinit var frameAnalyser  : FrameAnalyser
+
+    // Initialize Firebase MLKit Face Detector
+    private val accurateOps = FirebaseVisionFaceDetectorOptions.Builder()
+            .setPerformanceMode(FirebaseVisionFaceDetectorOptions.ACCURATE)
+            .build()
+    private val detector = FirebaseVision.getInstance().getVisionFaceDetector(accurateOps)
+
+    // Create an empty ( String , FloatArray ) Hashmap for storing the data.
+    private var imageData = ArrayList<Pair<String,FloatArray>>()
+    private var imageLabelPairs = ArrayList<Pair<Bitmap,String>>()
+
+    // Declare the FaceNet model variable.
+    private var model : FaceNetModel? = null
+
+    private var progressDialog : ProgressDialog? = null
 
     // For testing purposes only!
     companion object {
@@ -52,10 +63,9 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
 
         // Implementation of CameraX preview
-        
+
         cameraTextureView = findViewById( R.id.camera_textureView )
         val boundingBoxOverlay = findViewById<BoundingBoxOverlay>( R.id.bbox_overlay )
-        val autoModeButton = findViewById<Button>( R.id.auto_mode_button )
         logTextView = findViewById( R.id.logTextView )
 
         if (allPermissionsGranted()) {
@@ -78,83 +88,60 @@ class MainActivity : AppCompatActivity() {
             // Read image data
             scanStorageForImages()
         }
-
-        autoModeButton.setOnClickListener {
-            when( frameAnalyser.isAutoMode ) {
-                true -> {
-                    frameAnalyser.isAutoMode = false
-                    Toast.makeText( this , "Auto Recognition mode disabled" , Toast.LENGTH_LONG ).show()
-                    autoModeButton.text = "Enable Auto Mode"
-                }
-                false -> {
-                    frameAnalyser.isAutoMode = true
-                    Toast.makeText( this , "Auto Recognition mode enabled" , Toast.LENGTH_LONG ).show()
-                    autoModeButton.text = "Disable Auto Mode"
-                }
-            }
-        }
-
     }
 
     private fun scanStorageForImages() {
-        // Initialize FaceNet model.
-        val model = FaceNetModel( this )
-
-        // Create an empty ( String , FloatArray ) Hashmap for storing the data.
-        val imageData = HashMap<String,FloatArray>()
-
-        // Initialize Firebase MLKit Face Detector
-        val accurateOps = FirebaseVisionFaceDetectorOptions.Builder()
-            .setPerformanceMode(FirebaseVisionFaceDetectorOptions.ACCURATE)
-            .build()
-        val detector = FirebaseVision.getInstance().getVisionFaceDetector(accurateOps)
-
         if ( ContextCompat.checkSelfPermission( this , Manifest.permission.WRITE_EXTERNAL_STORAGE ) ==
-            PackageManager.PERMISSION_GRANTED ) {
-            val progressDialog = ProgressDialog( this )
-            progressDialog.setMessage( "Loading images ..." )
-            progressDialog.show()
-
+                PackageManager.PERMISSION_GRANTED ) {
+            progressDialog = ProgressDialog( this )
+            progressDialog?.setMessage( "Loading images ..." )
+            progressDialog?.setCancelable( false )
+            progressDialog?.show()
+            model = FaceNetModel( this )
             val imagesDir = File( Environment.getExternalStorageDirectory()!!.absolutePath + "/images" )
             val imageSubDirs = imagesDir.listFiles()
-
             if ( imageSubDirs == null ) {
                 Toast.makeText( this , "Could not read images. Make sure you've have a folder as described in the README" ,
                         Toast.LENGTH_LONG ).show()
                 return
             }
             else {
-                val subDirNames = imageSubDirs.map { file -> file.name }
-                val subjectImages = imageSubDirs.map { file -> BitmapFactory.decodeFile( file.listFiles()[0].absolutePath ) }
-                var imageCounter = 0
-                val successListener = OnSuccessListener<List<FirebaseVisionFace?>> { faces ->
-                    if ( faces.isNotEmpty() ) {
-                        Log.e( "App" , "${subDirNames[imageCounter]}")
-                        imageData[ subDirNames[ imageCounter ] ] =
-                                model.getFaceEmbedding( subjectImages[ imageCounter ] , faces[0]!!.boundingBox , false )
-                        imageCounter += 1
-                        // Make sure the frameAnalyser uses the given data!
-                        frameAnalyser.faceList = imageData
-                        if ( imageCounter == imageSubDirs.size ) {
-                            progressDialog.dismiss()
-                        }
+                for ( imageSubDir in imagesDir.listFiles() ) {
+                    for ( image in imageSubDir.listFiles() ) {
+                        imageLabelPairs.add(
+                                Pair( BitmapFactory.decodeFile( image.absolutePath ) , imageSubDir.name ))
                     }
                 }
-                for ( image in subjectImages ) {
-                    val metadata = FirebaseVisionImageMetadata.Builder()
-                            .setWidth( image.width )
-                            .setHeight( image.height )
-                            .setFormat(FirebaseVisionImageMetadata.IMAGE_FORMAT_NV21 )
-                            .setRotation( FirebaseVisionImageMetadata.ROTATION_0 )
-                            .build()
-                    val inputImage = FirebaseVisionImage.fromByteArray( bitmapToNV21( image ) , metadata )
-                    detector.detectInImage( inputImage ).addOnSuccessListener( successListener )
-                }
+                scanImage( 0 )
             }
-
-
         }
+    }
 
+    private fun scanImage( counter : Int ) {
+        val sample = imageLabelPairs[ counter ]
+        val metadata = FirebaseVisionImageMetadata.Builder()
+                .setWidth( sample.first.width )
+                .setHeight( sample.first.height )
+                .setFormat(FirebaseVisionImageMetadata.IMAGE_FORMAT_NV21 )
+                .setRotation( FirebaseVisionImageMetadata.ROTATION_0 )
+                .build()
+        val inputImage = FirebaseVisionImage.fromByteArray( bitmapToNV21( sample.first ) , metadata )
+        val successListener = OnSuccessListener<List<FirebaseVisionFace?>> { faces ->
+            if ( faces.isNotEmpty() ) {
+                imageData.add(
+                        Pair( sample.second , model!!.getFaceEmbedding( sample.first , faces[0]!!.boundingBox , false)))
+            }
+            if ( counter + 1  == imageLabelPairs.size ){
+                Toast.makeText( this@MainActivity , "Processing completed. ${imageData.size}" , Toast.LENGTH_LONG ).show()
+                progressDialog?.dismiss()
+                frameAnalyser.faceList = imageData
+            }
+            else {
+                progressDialog?.setMessage( "Processed ${counter+1} images" )
+                scanImage( counter + 1 )
+            }
+        }
+        detector.detectInImage( inputImage ).addOnSuccessListener( successListener )
     }
 
     // Start the camera preview once the permissions are granted.
@@ -175,7 +162,7 @@ class MainActivity : AppCompatActivity() {
         // FrameAnalyser -> fetches camera frames and makes them in the analyse() method.
         val analyzerConfig = ImageAnalysisConfig.Builder().apply {
             setImageReaderMode(
-                ImageAnalysis.ImageReaderMode.ACQUIRE_LATEST_IMAGE)
+                    ImageAnalysis.ImageReaderMode.ACQUIRE_LATEST_IMAGE)
             setLensFacing( CameraX.LensFacing.BACK )
 
         }.build()
@@ -202,8 +189,7 @@ class MainActivity : AppCompatActivity() {
         cameraTextureView.setTransform(matrix)
     }
 
-    override fun onRequestPermissionsResult(
-        requestCode: Int, permissions: Array<String>, grantResults: IntArray) {
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<String>, grantResults: IntArray) {
         if (requestCode == REQUEST_CODE_PERMISSIONS) {
             if (allPermissionsGranted()) {
                 cameraTextureView.post { startCamera() }
