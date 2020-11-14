@@ -34,6 +34,9 @@ class MainActivity : AppCompatActivity() {
     private lateinit var cameraTextureView : TextureView
     private lateinit var frameAnalyser  : FrameAnalyser
 
+    // Use Firebase MLKit to crop faces from images present in "/images" folder.
+    private val cropWithBBoxes : Boolean = false
+
     // Initialize Firebase MLKit Face Detector
     private val accurateOps = FirebaseVisionFaceDetectorOptions.Builder()
             .setPerformanceMode(FirebaseVisionFaceDetectorOptions.ACCURATE)
@@ -129,7 +132,15 @@ class MainActivity : AppCompatActivity() {
         val successListener = OnSuccessListener<List<FirebaseVisionFace?>> { faces ->
             if ( faces.isNotEmpty() ) {
                 imageData.add(
-                        Pair( sample.second , model!!.getFaceEmbedding( sample.first , faces[0]!!.boundingBox , false)))
+                        Pair( sample.second ,
+                                if ( cropWithBBoxes ) {
+                                    model!!.getFaceEmbedding( sample.first , faces[0]!!.boundingBox , false)
+                                }
+                                else {
+                                    model!!.getFaceEmbeddingWithoutBBox( sample.first , false )
+                                }
+                        )
+                )
             }
             if ( counter + 1  == imageLabelPairs.size ){
                 Toast.makeText( this@MainActivity , "Processing completed. ${imageData.size}" , Toast.LENGTH_LONG ).show()

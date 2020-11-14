@@ -2,6 +2,7 @@ package com.ml.quaterion.facenetdetection
 
 import android.content.Context
 import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.graphics.Matrix
 import android.graphics.Rect
 import android.os.Environment
@@ -36,6 +37,14 @@ class FaceNetModel( context : Context ) {
             convertBitmapToBuffer(
                 cropRectFromBitmap( image , crop , preRotate )
             )
+        )[0]
+    }
+
+    fun getFaceEmbeddingWithoutBBox( image : Bitmap , preRotate: Boolean ) : FloatArray {
+        return runFaceNet(
+                convertBitmapToBuffer(
+                        Bitmap.createScaledBitmap( image , 160 , 160 , false )
+                )
         )[0]
     }
 
@@ -81,15 +90,8 @@ class FaceNetModel( context : Context ) {
                 rect.top,
                 width,
                 height )
-        saveBitmap( croppedBitmap , "cropped" )
         return croppedBitmap
 
-    }
-
-    private fun saveBitmap(image: Bitmap, name: String) {
-        val fileOutputStream =
-                FileOutputStream(File( Environment.getExternalStorageDirectory()!!.absolutePath + "/$name.png"))
-        image.compress(Bitmap.CompressFormat.PNG, 100, fileOutputStream)
     }
 
     private fun rotateBitmap(source: Bitmap, angle: Float): Bitmap? {

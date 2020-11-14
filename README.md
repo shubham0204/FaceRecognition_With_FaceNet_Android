@@ -2,6 +2,10 @@
 
 >> **Store images of people who you would like to recognize and the app, using these images, will classify those people. We don't need to modify the app/retrain any ML model to add more people ( subjects ) for classification**
 
+# Major Updates ( as of November 2020 )
+
+* Cosine similarity has now been replaced by [L2 norm](https://en.wikipedia.org/wiki/Norm_(mathematics)#Euclidean_norm).
+* A new parameter has been added in `MainActivity.kt`. The `cropWithBBoxes` argument allows you to run the Firebase MLKit module on the images provided. If you are already providing cropped images in the `images/` folder, set this argument to `false`. On setting the value to `true`, Firebase ML Kit will crop faces from the images and then run the FaceNet model on it.
 
 ![](images/final_result.PNG)
 
@@ -11,7 +15,7 @@
 If you're ML developer, you might have heard about FaceNet, Google's state-of-the-art model for generating face embeddings. In this 
 project, we'll use the FaceNet model on Android and generate embeddings ( fixed size vectors ) which hold information of the face.
 
-> The accuracy of the face detection system ( with FaceNet ) may not have a considerable accuracy. As, under the hood, we are comparing angles between vectors, this model would not produce results with a very high accuracy.
+> The accuracy of the face detection system ( with FaceNet ) may not have a considerable accuracy. Make sure you explore other options as well while considering your app's production.
 
 
 ## About FaceNet
@@ -19,12 +23,9 @@ project, we'll use the FaceNet model on Android and generate embeddings ( fixed 
 So, the aim of the FaceNet model is to generate a 128 dimensional vector of a given face. It takes in an 160 * 160 RGB image and 
 outputs an array with 128 elements. How is it going to help us in our face recognition project? 
 Well, the FaceNet model generates similar face vectors for similar faces. Here, my the term "similar", we mean 
-the vectors which point out in the same direction. We calculate this similarity by measuring cosine of the angle between the two 
-given 128 dimensional vectors.
+the vectors which point out in the same direction. We use [L2 norm](https://en.wikipedia.org/wiki/Norm_(mathematics)#Euclidean_norm) to determine the closest vector to our target. 
 
-![](images/cos_similarity.png)
-
-In this app, we'll generate two such vectors and find the similarity between them. The one which has the highest similarity is our 
+In this app, we'll generate two such vectors and find the distance between them. The one which is the closest will form our 
 desired output.
 
 You can download the FaceNet Keras `.h5` file from this [repo](https://github.com/nyoki-mtl/keras-facenet).
@@ -67,8 +68,7 @@ The above procedure is carried out only on the app's startup. The steps below wi
 1. Using `androidx.camera.core.ImageAnalysis`, we construct a `FrameAnalyser` class which processes the camera frames. Now, for a 
 given frame, we first get the bounding box coordinates ( as a `Rect` ) of all the faces present in the frame. Crop the face from 
 the frame using these boxes.
-2. Feed the cropped faces to the FaceNet model to generate embeddings for them. Using cosine similarity, calculate the similarity 
-scores for all subjects ( which we stored earlier as `HashMap<String,FloatArray>` ). The one with highest similarity is 
+2. Feed the cropped faces to the FaceNet model to generate embeddings for them. Using L2 norm, calculate the distances for all subjects ( which we stored earlier as `HashMap<String,FloatArray>` ). The one with the smallest distance is 
 determined. The final output is then stored as a `Prediction` and passed to the `BoundingBoxOverlay` which draws boxes and 
 text.
 

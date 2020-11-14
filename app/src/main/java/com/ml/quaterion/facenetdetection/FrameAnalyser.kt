@@ -16,7 +16,6 @@ import java.io.File
 import java.io.FileOutputStream
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.collections.ArrayList
-import kotlin.collections.HashMap
 import kotlin.math.pow
 import kotlin.math.sqrt
 
@@ -76,24 +75,23 @@ class FrameAnalyser( private var context: Context , private var boundingBoxOverl
                                 val subject = model.getFaceEmbedding( bitmap , face.boundingBox , true )
                                 Log.i( "Model" , "New frame received.")
 
-                                // Determine index and value of the highest similarity score.
-                                var highestSimilarityScore = -1f
-                                var highestSimilarityScoreName = ""
-                                for ( sample in faceList ) {
-                                    val p = cosineSimilarity( subject , sample.second )
-                                    Log.i( "Model" , "Similarity score for ${sample.first} is ${p}.")
-                                    if ( p > highestSimilarityScore ) {
-                                        highestSimilarityScore = p
-                                        highestSimilarityScoreName = sample.first
-                                    }
+                                // Compute L2 norms and store them.
+                                val norms = FloatArray( faceList.size )
+                                for ( i in 0 until faceList.size ) {
+                                    norms[ i ] = L2Norm( subject , faceList[ i ].second )
                                 }
-                                Log.i( "Model" , "Person identified as ${highestSimilarityScoreName} with " +
-                                        "confidence of ${highestSimilarityScore * 100} %" )
+                                // Calculate the minimum L2 distance from the stored L2 norms.
+                                val prediction = faceList[ norms.indexOf( norms.min()!! ) ]
+                                val minDistanceName = prediction.first
+                                val minDistance = norms.min()!!
+
+                                Log.i( "Model" , "Person identified as ${minDistanceName} with " +
+                                        "confidence of ${minDistance * 100} %" )
                                 // Push the results in form of a Prediction.
                                 predictions.add(
                                         Prediction(
                                                 face.boundingBox,
-                                                highestSimilarityScoreName
+                                                minDistanceName
                                         )
                                 )
                             }
@@ -124,20 +122,13 @@ class FrameAnalyser( private var context: Context , private var boundingBoxOverl
         image.compress(Bitmap.CompressFormat.PNG, 100, fileOutputStream)
     }
 
-    // Cosine similarity for two vectors ( face embeddings ).
-    // cosineSimilarity = embedding1.dot( embedding2 ) / ||embedding1|| * ||embedding2||
-    private fun cosineSimilarity( x1 : FloatArray , x2 : FloatArray ) : Float {
-        var dotProduct = 0.0f
-        var mag1 = 0.0f
-        var mag2 = 0.0f
+    // Compute the L2 norm of ( x2 - x1 )
+    private fun L2Norm(x1 : FloatArray, x2 : FloatArray ) : Float {
+        var sum = 0.0f
         for( i in x1.indices ) {
-            dotProduct += ( x1[i] * x2[i] )
-            mag1 += x1[i].toDouble().pow(2.0).toFloat()
-            mag2 += x2[i].toDouble().pow(2.0).toFloat()
+            sum += ( x1[i] - x2[i] ).pow( 2 )
         }
-        mag1 = sqrt( mag1 )
-        mag2 = sqrt( mag2 )
-        return dotProduct / ( mag1 * mag2 )
+        return sqrt( sum )
     }
 
 
