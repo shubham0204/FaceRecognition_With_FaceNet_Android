@@ -72,6 +72,11 @@ the frame using these boxes.
 determined. The final output is then stored as a `Prediction` and passed to the `BoundingBoxOverlay` which draws boxes and 
 text.
 
+## Limitations
+
+Predictions may go wrong as FaceNet does not always produce similar embeddings for the same person. Consider the accuracy of the FaceNet model while using it in your apps. In that case, you may learn to use the `FaceNetModel` class separating for using FaceNet in some other tasks.
+
+
 ## Firebase Services
 
 The app uses Firebase MLKit API, so you'll need to connect this app to a Firebase project. You may update the Firebase dependencies and make sure you add the google-services.json file to the app.
