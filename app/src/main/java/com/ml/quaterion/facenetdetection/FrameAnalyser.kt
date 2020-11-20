@@ -7,10 +7,9 @@ import android.os.Environment
 import android.util.Log
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.ImageProxy
-import com.google.firebase.ml.vision.FirebaseVision
-import com.google.firebase.ml.vision.common.FirebaseVisionImage
-import com.google.firebase.ml.vision.common.FirebaseVisionImageMetadata
-import com.google.firebase.ml.vision.face.FirebaseVisionFaceDetectorOptions
+import com.google.mlkit.vision.face.FaceDetectorOptions
+import com.google.mlkit.vision.common.InputImage
+import com.google.mlkit.vision.face.FaceDetection
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.FileOutputStream
@@ -23,21 +22,13 @@ import kotlin.math.sqrt
 class FrameAnalyser( private var context: Context , private var boundingBoxOverlay: BoundingBoxOverlay ) : ImageAnalysis.Analyzer {
 
     // Configure the FirebaseVisionFaceDetector
-    private val realTimeOpts = FirebaseVisionFaceDetectorOptions.Builder()
-        .setPerformanceMode(FirebaseVisionFaceDetectorOptions.FAST)
-        .build()
-    private val detector = FirebaseVision.getInstance().getVisionFaceDetector(realTimeOpts)
+    val realTimeOpts = FaceDetectorOptions.Builder()
+            .setPerformanceMode( FaceDetectorOptions.PERFORMANCE_MODE_FAST )
+            .build()
+    private val detector = FaceDetection.getClient(realTimeOpts)
 
     // Used to determine whether the incoming frame should be dropped or processed.
     private var isProcessing = AtomicBoolean(false)
-
-    // FirebaseImageMeta for defining input image params.
-    private var metadata = FirebaseVisionImageMetadata.Builder()
-        .setWidth(640)
-        .setHeight(480)
-        .setFormat(FirebaseVisionImageMetadata.IMAGE_FORMAT_NV21 )
-        .setRotation(degreesToFirebaseRotation(90))
-        .build()
 
     // Store the face embeddings in a ( String , FloatArray ) ArrayList.
     // Where String -> name of the person abd FloatArray -> Embedding of the face.
@@ -61,8 +52,13 @@ class FrameAnalyser( private var context: Context , private var boundingBoxOverl
             isProcessing.set(true)
 
             // Perform face detection
-            val inputImage = FirebaseVisionImage.fromByteArray( BitmaptoNv21( bitmap ) , metadata )
-            detector.detectInImage(inputImage)
+            val inputImage = InputImage.fromByteArray( BitmaptoNv21( bitmap )
+                    , 640
+                    , 480
+                    , rotationDegrees
+                    , InputImage.IMAGE_FORMAT_NV21
+            )
+            detector.process(inputImage)
                 .addOnSuccessListener { faces ->
                     // Start a new thread to avoid frequent lags.
                     Thread {
@@ -129,15 +125,6 @@ class FrameAnalyser( private var context: Context , private var boundingBoxOverl
             sum += ( x1[i] - x2[i] ).pow( 2 )
         }
         return sqrt( sum )
-    }
-
-
-    private fun degreesToFirebaseRotation(degrees: Int): Int = when(degrees) {
-        0 -> FirebaseVisionImageMetadata.ROTATION_0
-        90 -> FirebaseVisionImageMetadata.ROTATION_90
-        180 -> FirebaseVisionImageMetadata.ROTATION_180
-        270 -> FirebaseVisionImageMetadata.ROTATION_270
-        else -> throw Exception("Rotation must be 0, 90, 180, or 270.")
     }
 
     private fun BitmaptoNv21( bitmap: Bitmap ): ByteArray {

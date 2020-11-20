@@ -19,11 +19,10 @@ import androidx.camera.core.*
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import com.google.android.gms.tasks.OnSuccessListener
-import com.google.firebase.ml.vision.FirebaseVision
-import com.google.firebase.ml.vision.common.FirebaseVisionImage
-import com.google.firebase.ml.vision.common.FirebaseVisionImageMetadata
-import com.google.firebase.ml.vision.face.FirebaseVisionFace
-import com.google.firebase.ml.vision.face.FirebaseVisionFaceDetectorOptions
+import com.google.mlkit.vision.face.FaceDetectorOptions
+import com.google.mlkit.vision.common.InputImage
+import com.google.mlkit.vision.face.Face
+import com.google.mlkit.vision.face.FaceDetection
 import java.io.*
 import java.util.concurrent.Executors
 
@@ -38,10 +37,10 @@ class MainActivity : AppCompatActivity() {
     private val cropWithBBoxes : Boolean = false
 
     // Initialize Firebase MLKit Face Detector
-    private val accurateOps = FirebaseVisionFaceDetectorOptions.Builder()
-            .setPerformanceMode(FirebaseVisionFaceDetectorOptions.ACCURATE)
-            .build()
-    private val detector = FirebaseVision.getInstance().getVisionFaceDetector(accurateOps)
+    val realTimeOpts = FaceDetectorOptions.Builder()
+        .setPerformanceMode( FaceDetectorOptions.PERFORMANCE_MODE_FAST )
+        .build()
+    private val detector = FaceDetection.getClient(realTimeOpts)
 
     // Create an empty ( String , FloatArray ) Hashmap for storing the data.
     private var imageData = ArrayList<Pair<String,FloatArray>>()
@@ -122,14 +121,13 @@ class MainActivity : AppCompatActivity() {
 
     private fun scanImage( counter : Int ) {
         val sample = imageLabelPairs[ counter ]
-        val metadata = FirebaseVisionImageMetadata.Builder()
-                .setWidth( sample.first.width )
-                .setHeight( sample.first.height )
-                .setFormat(FirebaseVisionImageMetadata.IMAGE_FORMAT_NV21 )
-                .setRotation( FirebaseVisionImageMetadata.ROTATION_0 )
-                .build()
-        val inputImage = FirebaseVisionImage.fromByteArray( bitmapToNV21( sample.first ) , metadata )
-        val successListener = OnSuccessListener<List<FirebaseVisionFace?>> { faces ->
+        val inputImage = InputImage.fromByteArray( bitmapToNV21( sample.first )
+            , sample.first.width
+            , sample.first.height
+            , 0
+            , InputImage.IMAGE_FORMAT_NV21
+        )
+        val successListener = OnSuccessListener<List<Face?>> { faces ->
             if ( faces.isNotEmpty() ) {
                 imageData.add(
                         Pair( sample.second ,
@@ -142,6 +140,9 @@ class MainActivity : AppCompatActivity() {
                         )
                 )
             }
+            else {
+                Log.e( "App" , "No face ------------------------- ")
+            }
             if ( counter + 1  == imageLabelPairs.size ){
                 Toast.makeText( this@MainActivity , "Processing completed. ${imageData.size}" , Toast.LENGTH_LONG ).show()
                 progressDialog?.dismiss()
@@ -152,7 +153,7 @@ class MainActivity : AppCompatActivity() {
                 scanImage( counter + 1 )
             }
         }
-        detector.detectInImage( inputImage ).addOnSuccessListener( successListener )
+        detector.process( inputImage ).addOnSuccessListener( successListener )
     }
 
     // Start the camera preview once the permissions are granted.
