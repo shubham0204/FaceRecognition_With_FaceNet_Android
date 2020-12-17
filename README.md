@@ -1,11 +1,14 @@
 [<img src="https://github.com/shubham0204/Privacy_Policy_Texts/blob/master/notebook_button_two.png?raw=true" width="170" height="50" align="center">](https://medium.com/@equipintelligence/using-facenet-for-on-device-face-recognition-with-android-f84e36e19761)
 
->> **Store images of people who you would like to recognize and the app, using these images, will classify those people. We don't need to modify the app/retrain any ML model to add more people ( subjects ) for classification**
+> **Store images of people who you would like to recognize and the app, using these images, will classify those people. We don't need to modify the app/retrain any ML model to add more people ( subjects ) for classification**
 
 # Major Updates ( as of November 2020 )
 
 * Cosine similarity has now been replaced by [L2 norm](https://en.wikipedia.org/wiki/Norm_(mathematics)#Euclidean_norm).
 * A new parameter has been added in `MainActivity.kt`. The `cropWithBBoxes` argument allows you to run the Firebase MLKit module on the images provided. If you are already providing cropped images in the `images/` folder, set this argument to `false`. On setting the value to `true`, Firebase ML Kit will crop faces from the images and then run the FaceNet model on it.
+* For aspiring [MAD ( Modern Android Development ) developers](https://www.youtube.com/watch?v=PB-hZVTScUg), here's the [MAD scorecard](https://developer.android.com/modern-android-development/scorecard) for this project,
+
+![](images/mad_summary.png)
 
 ![](images/final_result.PNG)
 
