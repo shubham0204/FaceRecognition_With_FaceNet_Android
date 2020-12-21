@@ -9,7 +9,7 @@
 * A new parameter has been added in `MainActivity.kt`. The `cropWithBBoxes` argument allows you to run the Firebase MLKit module on the images provided. If you are already providing cropped images in the `images/` folder, set this argument to `false`. On setting the value to `true`, Firebase ML Kit will crop faces from the images and then run the FaceNet model on it.  
 * Here's the MAD Scorecard for this project. Read more about [MAD ( Modern Android Development Skills )](https://developer.android.com/series/mad-skills) here.
 
-![](images/mad_summary.png
+![](images/mad_summary.png)
 
 ---
   
