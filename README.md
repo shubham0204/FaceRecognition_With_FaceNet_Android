@@ -7,6 +7,11 @@
 * Lens Facing of the camera can be changed now. A button is provided on the main screen itself.  
 * Cosine similarity has now been replaced by [L2 norm](https://en.wikipedia.org/wiki/Norm_(mathematics)#Euclidean_norm).  
 * A new parameter has been added in `MainActivity.kt`. The `cropWithBBoxes` argument allows you to run the Firebase MLKit module on the images provided. If you are already providing cropped images in the `images/` folder, set this argument to `false`. On setting the value to `true`, Firebase ML Kit will crop faces from the images and then run the FaceNet model on it.  
+* Here's the MAD Scorecard for this project. Read more about [MAD ( Modern Android Development Skills )](https://developer.android.com/series/mad-skills) here.
+
+![](images/mad_summary.png
+
+---
   
 ![](images/final_result.PNG)  
   
