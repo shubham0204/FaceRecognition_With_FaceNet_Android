@@ -1,3 +1,18 @@
+/*
+ * Copyright 2020 Shubham Panchal
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * You may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.ml.quaterion.facenetdetection
 
 import android.content.Context
@@ -8,7 +23,13 @@ import android.graphics.Rect
 import android.os.Environment
 import android.util.Log
 import org.tensorflow.lite.Interpreter
+import org.tensorflow.lite.gpu.GpuDelegate
 import org.tensorflow.lite.support.common.FileUtil
+import org.tensorflow.lite.support.common.TensorProcessor
+import org.tensorflow.lite.support.common.ops.NormalizeOp
+import org.tensorflow.lite.support.image.ImageProcessor
+import org.tensorflow.lite.support.image.TensorImage
+import org.tensorflow.lite.support.image.ops.ResizeOp
 import java.io.File
 import java.io.FileOutputStream
 import java.nio.ByteBuffer
@@ -23,6 +44,12 @@ class FaceNetModel( context : Context ) {
     // Input image size for FaceNet model.
     private val imgSize = 160
 
+    // Image Processor for preprocessing input images.
+    private val imageTensorProcessor = ImageProcessor.Builder()
+            .add( ResizeOp( imgSize , imgSize , ResizeOp.ResizeMethod.BILINEAR ) )
+            .add( NormalizeOp( 127.5f , 127.5f ) )
+            .build()
+
     init {
         // Initialize TFLiteInterpreter
         val interpreterOptions = Interpreter.Options().apply {
@@ -31,7 +58,7 @@ class FaceNetModel( context : Context ) {
         interpreter = Interpreter(FileUtil.loadMappedFile(context, "facenet_int8_quant.tflite") , interpreterOptions )
     }
 
-    // Gets an face embedding using FaceNet
+    // Gets an face embedding using FaceNet, use the `crop` rect.
     fun getFaceEmbedding( image : Bitmap , crop : Rect , preRotate: Boolean ) : FloatArray {
         return runFaceNet(
             convertBitmapToBuffer(
@@ -40,12 +67,9 @@ class FaceNetModel( context : Context ) {
         )[0]
     }
 
-    fun getFaceEmbeddingWithoutBBox( image : Bitmap , preRotate: Boolean ) : FloatArray {
-        return runFaceNet(
-                convertBitmapToBuffer(
-                        Bitmap.createScaledBitmap( image , 160 , 160 , false )
-                )
-        )[0]
+    // Gets an face embedding using the FaceNet model, given the cropped images.
+    fun getFaceEmbeddingWithoutBBox( image : Bitmap ) : FloatArray {
+        return runFaceNet( convertBitmapToBuffer( image ) )[0]
     }
 
     // Run the FaceNet model.
@@ -59,18 +83,8 @@ class FaceNetModel( context : Context ) {
 
     // Resize the given bitmap and convert it to a ByteBuffer
     private fun convertBitmapToBuffer( image : Bitmap) : ByteBuffer {
-        val imageByteBuffer = ByteBuffer.allocateDirect( 1 * imgSize * imgSize * 3 * 4 )
-        imageByteBuffer.order( ByteOrder.nativeOrder() )
-        val resizedImage = Bitmap.createScaledBitmap(image, imgSize , imgSize, true)
-        for (x in 0 until imgSize) {
-            for (y in 0 until imgSize) {
-                val pixelValue = resizedImage.getPixel( x , y )
-                imageByteBuffer.putFloat((((pixelValue shr 16 and 0xFF) - 128f) / 128f))
-                imageByteBuffer.putFloat((((pixelValue shr 8 and 0xFF) - 128f) / 128f ))
-                imageByteBuffer.putFloat((((pixelValue and 0xFF) - 128f )/ 128f))
-            }
-        }
-        return imageByteBuffer
+        val imageTensor = imageTensorProcessor.process( TensorImage.fromBitmap( image ) )
+        return imageTensor.buffer
     }
 
     // Crop the given bitmap with the given rect.
@@ -85,14 +99,20 @@ class FaceNetModel( context : Context ) {
             height = source.height - rect.top
         }
         val croppedBitmap = Bitmap.createBitmap(
-                if ( preRotate ) rotateBitmap( source , 90f )!! else source,
+                if ( preRotate ) rotateBitmap( source , -90f )!! else source,
                 rect.left,
                 rect.top,
                 width,
                 height )
+        saveBitmap( croppedBitmap , "nameimage")
         return croppedBitmap
-
     }
+    private fun saveBitmap(image: Bitmap, name: String) {
+        val fileOutputStream =
+                FileOutputStream(File( Environment.getExternalStorageDirectory()!!.absolutePath + "/$name.png"))
+        image.compress(Bitmap.CompressFormat.PNG, 100, fileOutputStream)
+    }
+
 
     private fun rotateBitmap(source: Bitmap, angle: Float): Bitmap? {
         val matrix = Matrix()

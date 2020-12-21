@@ -1,3 +1,18 @@
+/*
+ * Copyright 2020 Shubham Panchal
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * You may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.ml.quaterion.facenetdetection
 
 import android.Manifest
@@ -12,6 +27,7 @@ import android.util.Log
 import android.util.Size
 import android.view.Surface
 import android.view.TextureView
+import android.view.View
 import android.view.ViewGroup
 import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
@@ -37,7 +53,7 @@ class MainActivity : AppCompatActivity() {
     private val cropWithBBoxes : Boolean = false
 
     // Initialize Firebase MLKit Face Detector
-    val realTimeOpts = FaceDetectorOptions.Builder()
+    private val realTimeOpts = FaceDetectorOptions.Builder()
         .setPerformanceMode( FaceDetectorOptions.PERFORMANCE_MODE_FAST )
         .build()
     private val detector = FaceDetection.getClient(realTimeOpts)
@@ -49,7 +65,12 @@ class MainActivity : AppCompatActivity() {
     // Declare the FaceNet model variable.
     private var model : FaceNetModel? = null
 
+    // To show the number of images processed.
     private var progressDialog : ProgressDialog? = null
+
+    // Boolean value to switch the lens facing.
+    // By default, switch on the REAR camera.
+    private var isRearCameraOn = true ;
 
     // For testing purposes only!
     companion object {
@@ -71,7 +92,7 @@ class MainActivity : AppCompatActivity() {
         logTextView = findViewById( R.id.logTextView )
 
         if (allPermissionsGranted()) {
-            cameraTextureView.post { startCamera() }
+            cameraTextureView.post { startCamera( CameraX.LensFacing.BACK ) }
         }
         else {
             ActivityCompat.requestPermissions(this, REQUIRED_PERMISSIONS, REQUEST_CODE_PERMISSIONS)
@@ -83,6 +104,7 @@ class MainActivity : AppCompatActivity() {
         // Necessary to keep the Overlay above the TextureView so that the boxes are visible.
         boundingBoxOverlay.setWillNotDraw( false )
         boundingBoxOverlay.setZOrderOnTop( true )
+
         frameAnalyser = FrameAnalyser( this , boundingBoxOverlay)
 
         if ( ActivityCompat.checkSelfPermission( this , Manifest.permission.WRITE_EXTERNAL_STORAGE ) ==
@@ -90,6 +112,21 @@ class MainActivity : AppCompatActivity() {
             // Read image data
             scanStorageForImages()
         }
+
+        // Initialize the change_cam_facing button
+        val changeCameraFacingButton = findViewById<Button>( R.id.change_cam_facing )
+        changeCameraFacingButton.setOnClickListener {
+            // Switch Lens facing
+            when( isRearCameraOn ) {
+                true -> startCamera( CameraX.LensFacing.FRONT )
+                false -> startCamera( CameraX.LensFacing.BACK )
+            }
+            // Instruct boundingBoxOverlay to add a postScale is the LensFacing = FRONT
+            boundingBoxOverlay.addPostScaleTransform = isRearCameraOn
+            // Invert the boolean value
+            isRearCameraOn = !isRearCameraOn
+        }
+
     }
 
     private fun scanStorageForImages() {
@@ -110,8 +147,7 @@ class MainActivity : AppCompatActivity() {
             else {
                 for ( imageSubDir in imagesDir.listFiles() ) {
                     for ( image in imageSubDir.listFiles() ) {
-                        imageLabelPairs.add(
-                                Pair( BitmapFactory.decodeFile( image.absolutePath ) , imageSubDir.name ))
+                        imageLabelPairs.add( Pair( BitmapFactory.decodeFile( image.absolutePath ) , imageSubDir.name ))
                     }
                 }
                 scanImage( 0 )
@@ -135,32 +171,40 @@ class MainActivity : AppCompatActivity() {
                                     model!!.getFaceEmbedding( sample.first , faces[0]!!.boundingBox , false)
                                 }
                                 else {
-                                    model!!.getFaceEmbeddingWithoutBBox( sample.first , false )
+                                    model!!.getFaceEmbeddingWithoutBBox( sample.first )
                                 }
                         )
                 )
             }
-            else {
-                Log.e( "App" , "No face ------------------------- ")
-            }
             if ( counter + 1  == imageLabelPairs.size ){
-                Toast.makeText( this@MainActivity , "Processing completed. ${imageData.size}" , Toast.LENGTH_LONG ).show()
+                Toast.makeText(
+                    this@MainActivity ,
+                    "Processing completed. Found ${imageData.size} image(s)"
+                    , Toast.LENGTH_LONG
+                ).show()
                 progressDialog?.dismiss()
                 frameAnalyser.faceList = imageData
             }
             else {
-                progressDialog?.setMessage( "Processed ${counter+1} images" )
+                progressDialog?.setMessage( "Processed ${counter+1} image(s)" )
                 scanImage( counter + 1 )
             }
         }
         detector.process( inputImage ).addOnSuccessListener( successListener )
     }
 
-    // Start the camera preview once the permissions are granted.
-    private fun startCamera() {
+    // Start the camera preview once the permissions are granted, also with the
+    // given LensFacing ( FRONT or BACK ).
+    private fun startCamera( cameraFacing : CameraX.LensFacing ) {
+
+        // Unbind all usecases as we'll be adding them again.
+        CameraX.unbindAll()
+
+        Log.i( "Camera" , "Starting camera with ${cameraFacing.name} facing." )
+
         val previewConfig = PreviewConfig.Builder().apply {
             setTargetResolution(Size(640, 480 ))
-            setLensFacing( CameraX.LensFacing.BACK )
+            setLensFacing( cameraFacing )
         }.build()
         val preview = Preview(previewConfig)
         preview.setOnPreviewOutputUpdateListener {
@@ -175,7 +219,7 @@ class MainActivity : AppCompatActivity() {
         val analyzerConfig = ImageAnalysisConfig.Builder().apply {
             setImageReaderMode(
                     ImageAnalysis.ImageReaderMode.ACQUIRE_LATEST_IMAGE)
-            setLensFacing( CameraX.LensFacing.BACK )
+            setLensFacing( cameraFacing )
 
         }.build()
         val analyzerUseCase = ImageAnalysis(analyzerConfig).apply {
@@ -204,7 +248,7 @@ class MainActivity : AppCompatActivity() {
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<String>, grantResults: IntArray) {
         if (requestCode == REQUEST_CODE_PERMISSIONS) {
             if (allPermissionsGranted()) {
-                cameraTextureView.post { startCamera() }
+                cameraTextureView.post { startCamera( CameraX.LensFacing.BACK ) }
                 scanStorageForImages()
             }
         }

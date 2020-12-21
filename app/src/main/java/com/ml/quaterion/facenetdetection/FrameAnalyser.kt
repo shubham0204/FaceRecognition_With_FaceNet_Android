@@ -1,3 +1,18 @@
+/*
+ * Copyright 2020 Shubham Panchal
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * You may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.ml.quaterion.facenetdetection
 
 import android.content.Context
@@ -15,6 +30,7 @@ import java.io.File
 import java.io.FileOutputStream
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.collections.ArrayList
+import kotlin.collections.HashMap
 import kotlin.math.pow
 import kotlin.math.sqrt
 
@@ -22,7 +38,7 @@ import kotlin.math.sqrt
 class FrameAnalyser( private var context: Context , private var boundingBoxOverlay: BoundingBoxOverlay ) : ImageAnalysis.Analyzer {
 
     // Configure the FirebaseVisionFaceDetector
-    val realTimeOpts = FaceDetectorOptions.Builder()
+    private val realTimeOpts = FaceDetectorOptions.Builder()
             .setPerformanceMode( FaceDetectorOptions.PERFORMANCE_MODE_FAST )
             .build()
     private val detector = FaceDetection.getClient(realTimeOpts)
@@ -31,7 +47,7 @@ class FrameAnalyser( private var context: Context , private var boundingBoxOverl
     private var isProcessing = AtomicBoolean(false)
 
     // Store the face embeddings in a ( String , FloatArray ) ArrayList.
-    // Where String -> name of the person abd FloatArray -> Embedding of the face.
+    // Where String -> name of the person and FloatArray -> Embedding of the face.
     var faceList = ArrayList<Pair<String,FloatArray>>()
 
     // FaceNet model utility class
@@ -71,28 +87,49 @@ class FrameAnalyser( private var context: Context , private var boundingBoxOverl
                                 val subject = model.getFaceEmbedding( bitmap , face.boundingBox , true )
                                 Log.i( "Model" , "New frame received.")
 
-                                // Compute L2 norms and store them.
-                                val norms = FloatArray( faceList.size )
+                                // Perform clustering ( grouping )
+                                // Store the clusters in a HashMap. Here, the key would represent the 'name'
+                                // of that cluster and ArrayList<Float> would represent the collection of all
+                                // L2 norms.
+                                val nameNormHashMap = HashMap<String,ArrayList<Float>>()
                                 for ( i in 0 until faceList.size ) {
-                                    norms[ i ] = L2Norm( subject , faceList[ i ].second )
+                                    // If this cluster ( i.e an ArrayList with a specific key ) does not exist,
+                                    // initialize a new one.
+                                    if ( nameNormHashMap[ faceList[ i ].first ] == null ) {
+                                        // Compute the L2 norm and then append it to the ArrayList.
+                                        val p = ArrayList<Float>()
+                                        p.add( L2Norm( subject , faceList[ i ].second ) )
+                                        nameNormHashMap[ faceList[ i ].first ] = p
+                                    }
+                                    // If this cluster exists, append the L2 norm to it.
+                                    else {
+                                        nameNormHashMap[ faceList[ i ].first ]?.add( L2Norm( subject , faceList[ i ].second ) )
+                                    }
                                 }
-                                // Calculate the minimum L2 distance from the stored L2 norms.
-                                val prediction = faceList[ norms.indexOf( norms.min()!! ) ]
-                                val minDistanceName = prediction.first
-                                val minDistance = norms.min()!!
 
-                                Log.i( "Model" , "Person identified as ${minDistanceName} with " +
-                                        "confidence of ${minDistance * 100} %" )
+                                // Compute the average of all L2 norms for each cluster.
+                                val avgNorms = nameNormHashMap.values.map{ L2norms ->
+                                    L2norms.toFloatArray().average()
+                                }
+                                Log.i( "Model" , "Average norm for each user : $nameNormHashMap" )
+                                // Get the names of unique users
+                                val names = nameNormHashMap.keys.map{ key -> key }
+
+                                // Calculate the minimum L2 distance from the stored average L2 norms.
+                                val minL2NormName = names[ avgNorms.indexOf( avgNorms.min()!! ) ]
+
+                                Log.i( "Model" , "Person identified as ${minL2NormName}" )
                                 // Push the results in form of a Prediction.
                                 predictions.add(
                                         Prediction(
                                                 face.boundingBox,
-                                                minDistanceName
+                                                minL2NormName
                                         )
                                 )
                             }
                             catch ( e : Exception ) {
                                 // If any exception occurs with this box and continue with the next boxes.
+                                Log.e( "Model" , "Exception in FrameAnalyser : ${e.message}" )
                                 continue
                             }
                         }
@@ -107,11 +144,12 @@ class FrameAnalyser( private var context: Context , private var boundingBoxOverl
                     }.start()
                 }
                 .addOnFailureListener { e ->
-                    Log.e("Error", e.message)
+                    Log.e("Model", e.message)
                 }
         }
     }
 
+    // Use this method to save a Bitmap to the internal storage of your device.
     private fun saveBitmap(image: Bitmap, name: String) {
         val fileOutputStream =
             FileOutputStream(File( Environment.getExternalStorageDirectory()!!.absolutePath + "/$name.png"))
