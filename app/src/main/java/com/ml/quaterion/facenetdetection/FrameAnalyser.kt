@@ -53,6 +53,9 @@ class FrameAnalyser( private var context: Context , private var boundingBoxOverl
     // FaceNet model utility class
     private val model = FaceNetModel( context )
 
+    // Use any one of the two metrics, "cosine" or "l2"
+    private val metricToBeUsed = "cosine"
+
     // Here's where we receive our frames.
     override fun analyze(image: ImageProxy?, rotationDegrees: Int) {
 
@@ -98,7 +101,14 @@ class FrameAnalyser( private var context: Context , private var boundingBoxOverl
                                     if ( nameNormHashMap[ faceList[ i ].first ] == null ) {
                                         // Compute the L2 norm and then append it to the ArrayList.
                                         val p = ArrayList<Float>()
-                                        p.add( L2Norm( subject , faceList[ i ].second ) )
+                                        if ( metricToBeUsed == "cosine" ) {
+                                            Log.i( "Model" , "Using cosine similarity." )
+                                            p.add( cosineSimilarity( subject , faceList[ i ].second ) )
+                                        }
+                                        else {
+                                            Log.i( "Model" , "Using L2 norm." )
+                                            p.add( L2Norm( subject , faceList[ i ].second ) )
+                                        }
                                         nameNormHashMap[ faceList[ i ].first ] = p
                                     }
                                     // If this cluster exists, append the L2 norm to it.
@@ -116,7 +126,13 @@ class FrameAnalyser( private var context: Context , private var boundingBoxOverl
                                 val names = nameNormHashMap.keys.map{ key -> key }
 
                                 // Calculate the minimum L2 distance from the stored average L2 norms.
-                                val minL2NormName = names[ avgNorms.indexOf( avgNorms.min()!! ) ]
+                                var minL2NormName : String
+                                if ( metricToBeUsed == "cosine" ) {
+                                    minL2NormName = names[ avgNorms.indexOf( avgNorms.max()!! ) ]
+                                }
+                                else {
+                                    minL2NormName = names[ avgNorms.indexOf( avgNorms.min()!! ) ]
+                                }
 
                                 Log.i( "Model" , "Person identified as ${minL2NormName}" )
                                 // Push the results in form of a Prediction.
@@ -163,6 +179,22 @@ class FrameAnalyser( private var context: Context , private var boundingBoxOverl
             sum += ( x1[i] - x2[i] ).pow( 2 )
         }
         return sqrt( sum )
+    }
+
+    private fun cosineSimilarity( x1 : FloatArray , x2 : FloatArray ) : Float {
+        var dotProduct = 0.0f
+        var mag1 = 0.0f
+        var mag2 = 0.0f
+        var sum = 0.0f
+        for (i in x1.indices) {
+            dotProduct += (x1[i] * x2[i])
+            mag1 += x1[i].toDouble().pow(2.0).toFloat()
+            mag2 += x2[i].toDouble().pow(2.0).toFloat()
+            sum += (x1[i] - x2[i]).pow(2)
+        }
+        mag1 = sqrt(mag1)
+        mag2 = sqrt(mag2)
+        return dotProduct / (mag1 * mag2)
     }
 
     private fun BitmaptoNv21( bitmap: Bitmap ): ByteArray {

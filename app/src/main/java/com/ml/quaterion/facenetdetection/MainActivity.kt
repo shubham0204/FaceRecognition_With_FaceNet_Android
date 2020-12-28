@@ -49,7 +49,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var cameraTextureView : TextureView
     private lateinit var frameAnalyser  : FrameAnalyser
 
-    // Use Firebase MLKit to crop faces from images present in "/images" folder.
+    // Use Firebase MLKit to crop faces from images present in "/images" folde
     private val cropWithBBoxes : Boolean = false
 
     // Initialize Firebase MLKit Face Detector
@@ -90,6 +90,11 @@ class MainActivity : AppCompatActivity() {
         cameraTextureView = findViewById( R.id.camera_textureView )
         val boundingBoxOverlay = findViewById<BoundingBoxOverlay>( R.id.bbox_overlay )
         logTextView = findViewById( R.id.logTextView )
+        frameAnalyser = FrameAnalyser( this , boundingBoxOverlay)
+        progressDialog = ProgressDialog( this )
+        progressDialog?.setMessage( "Loading images ..." )
+        progressDialog?.setCancelable( false )
+        model = FaceNetModel( this )
 
         if (allPermissionsGranted()) {
             cameraTextureView.post { startCamera( CameraX.LensFacing.BACK ) }
@@ -104,8 +109,6 @@ class MainActivity : AppCompatActivity() {
         // Necessary to keep the Overlay above the TextureView so that the boxes are visible.
         boundingBoxOverlay.setWillNotDraw( false )
         boundingBoxOverlay.setZOrderOnTop( true )
-
-        frameAnalyser = FrameAnalyser( this , boundingBoxOverlay)
 
         if ( ActivityCompat.checkSelfPermission( this , Manifest.permission.WRITE_EXTERNAL_STORAGE ) ==
                 PackageManager.PERMISSION_GRANTED ){
@@ -130,38 +133,30 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun scanStorageForImages() {
-        if ( ContextCompat.checkSelfPermission( this , Manifest.permission.WRITE_EXTERNAL_STORAGE ) ==
-                PackageManager.PERMISSION_GRANTED ) {
-            progressDialog = ProgressDialog( this )
-            progressDialog?.setMessage( "Loading images ..." )
-            progressDialog?.setCancelable( false )
+        progressDialog?.show()
+        val imagesDir = File( Environment.getExternalStorageDirectory()!!.absolutePath + "/images" )
+        val imageSubDirs = imagesDir.listFiles()
+        if ( imageSubDirs == null ) {
             progressDialog?.show()
-            model = FaceNetModel( this )
-            val imagesDir = File( Environment.getExternalStorageDirectory()!!.absolutePath + "/images" )
-            val imageSubDirs = imagesDir.listFiles()
-            if ( imageSubDirs == null ) {
-                Toast.makeText( this , "Could not read images. Make sure you've have a folder as described in the README" ,
-                        Toast.LENGTH_LONG ).show()
-                return
-            }
-            else {
-                for ( imageSubDir in imagesDir.listFiles() ) {
-                    for ( image in imageSubDir.listFiles() ) {
-                        imageLabelPairs.add( Pair( BitmapFactory.decodeFile( image.absolutePath ) , imageSubDir.name ))
-                    }
+        }
+        else {
+            for ( imageSubDir in imagesDir.listFiles() ) {
+                for ( image in imageSubDir.listFiles() ) {
+                    imageLabelPairs.add( Pair( BitmapFactory.decodeFile( image.absolutePath ) , imageSubDir.name ))
                 }
-                scanImage( 0 )
             }
+            scanImage( 0 )
         }
     }
+
 
     private fun scanImage( counter : Int ) {
         val sample = imageLabelPairs[ counter ]
         val inputImage = InputImage.fromByteArray( bitmapToNV21( sample.first )
-            , sample.first.width
-            , sample.first.height
-            , 0
-            , InputImage.IMAGE_FORMAT_NV21
+                , sample.first.width
+                , sample.first.height
+                , 0
+                , InputImage.IMAGE_FORMAT_NV21
         )
         val successListener = OnSuccessListener<List<Face?>> { faces ->
             if ( faces.isNotEmpty() ) {
@@ -178,9 +173,9 @@ class MainActivity : AppCompatActivity() {
             }
             if ( counter + 1  == imageLabelPairs.size ){
                 Toast.makeText(
-                    this@MainActivity ,
-                    "Processing completed. Found ${imageData.size} image(s)"
-                    , Toast.LENGTH_LONG
+                        this@MainActivity ,
+                        "Processing completed. Found ${imageData.size} image(s)"
+                        , Toast.LENGTH_LONG
                 ).show()
                 progressDialog?.dismiss()
                 frameAnalyser.faceList = imageData
@@ -191,7 +186,9 @@ class MainActivity : AppCompatActivity() {
             }
         }
         detector.process( inputImage ).addOnSuccessListener( successListener )
+
     }
+
 
     // Start the camera preview once the permissions are granted, also with the
     // given LensFacing ( FRONT or BACK ).

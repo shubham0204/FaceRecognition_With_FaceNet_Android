@@ -89,7 +89,6 @@ class FaceNetModel( context : Context ) {
 
     // Crop the given bitmap with the given rect.
     private fun cropRectFromBitmap(source: Bitmap, rect: Rect , preRotate : Boolean ): Bitmap {
-        Log.e( "App" , "rect ${source.width} , ${rect.left + rect.width()} ${rect.toShortString()}" )
         var width = rect.width()
         var height = rect.height()
         if ( (rect.left + width) > source.width ){
@@ -104,7 +103,7 @@ class FaceNetModel( context : Context ) {
                 rect.top,
                 width,
                 height )
-        saveBitmap( croppedBitmap , "nameimage")
+        //saveBitmap( croppedBitmap , "image")
         return croppedBitmap
     }
     private fun saveBitmap(image: Bitmap, name: String) {
