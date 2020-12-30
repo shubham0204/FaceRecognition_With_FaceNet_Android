@@ -96,12 +96,14 @@ class MainActivity : AppCompatActivity() {
         progressDialog?.setCancelable( false )
         model = FaceNetModel( this )
 
+        // Check for permissions.
         if (allPermissionsGranted()) {
             cameraTextureView.post { startCamera( CameraX.LensFacing.BACK ) }
         }
         else {
             ActivityCompat.requestPermissions(this, REQUIRED_PERMISSIONS, REQUEST_CODE_PERMISSIONS)
         }
+
         cameraTextureView.addOnLayoutChangeListener { _, _, _, _, _, _, _, _, _ ->
             updateTransform()
         }
@@ -140,17 +142,20 @@ class MainActivity : AppCompatActivity() {
             progressDialog?.show()
         }
         else {
+            // List all the images in the "images" dir. Create a Hashmap of <Path,Bitmap> from them.
             for ( imageSubDir in imagesDir.listFiles() ) {
                 for ( image in imageSubDir.listFiles() ) {
                     imageLabelPairs.add( Pair( BitmapFactory.decodeFile( image.absolutePath ) , imageSubDir.name ))
                 }
             }
+            // Initiate the loop
             scanImage( 0 )
         }
     }
 
 
     private fun scanImage( counter : Int ) {
+        // Get the Bitmap
         val sample = imageLabelPairs[ counter ]
         val inputImage = InputImage.fromByteArray( bitmapToNV21( sample.first )
                 , sample.first.width
@@ -160,6 +165,7 @@ class MainActivity : AppCompatActivity() {
         )
         val successListener = OnSuccessListener<List<Face?>> { faces ->
             if ( faces.isNotEmpty() ) {
+                // Append face embeddings to imageData
                 imageData.add(
                         Pair( sample.second ,
                                 if ( cropWithBBoxes ) {
@@ -171,22 +177,26 @@ class MainActivity : AppCompatActivity() {
                         )
                 )
             }
+            // Check if all images have been processed.
             if ( counter + 1  == imageLabelPairs.size ){
                 Toast.makeText(
                         this@MainActivity ,
                         "Processing completed. Found ${imageData.size} image(s)"
                         , Toast.LENGTH_LONG
                 ).show()
+                // Dismiss the progressDialog
                 progressDialog?.dismiss()
                 frameAnalyser.faceList = imageData
             }
             else {
+                // Else, update the message of the ProgressDialog
                 progressDialog?.setMessage( "Processed ${counter+1} image(s)" )
+                // Rerun this message with the updated counter.
                 scanImage( counter + 1 )
             }
         }
+        // addOnSuccessListener for face detection.
         detector.process( inputImage ).addOnSuccessListener( successListener )
-
     }
 
 

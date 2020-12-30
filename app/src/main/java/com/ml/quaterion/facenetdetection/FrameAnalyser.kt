@@ -94,11 +94,11 @@ class FrameAnalyser( private var context: Context , private var boundingBoxOverl
                                 // Store the clusters in a HashMap. Here, the key would represent the 'name'
                                 // of that cluster and ArrayList<Float> would represent the collection of all
                                 // L2 norms.
-                                val nameNormHashMap = HashMap<String,ArrayList<Float>>()
+                                val nameScoreHashmap = HashMap<String,ArrayList<Float>>()
                                 for ( i in 0 until faceList.size ) {
                                     // If this cluster ( i.e an ArrayList with a specific key ) does not exist,
                                     // initialize a new one.
-                                    if ( nameNormHashMap[ faceList[ i ].first ] == null ) {
+                                    if ( nameScoreHashmap[ faceList[ i ].first ] == null ) {
                                         // Compute the L2 norm and then append it to the ArrayList.
                                         val p = ArrayList<Float>()
                                         if ( metricToBeUsed == "cosine" ) {
@@ -109,37 +109,46 @@ class FrameAnalyser( private var context: Context , private var boundingBoxOverl
                                             Log.i( "Model" , "Using L2 norm." )
                                             p.add( L2Norm( subject , faceList[ i ].second ) )
                                         }
-                                        nameNormHashMap[ faceList[ i ].first ] = p
+                                        nameScoreHashmap[ faceList[ i ].first ] = p
                                     }
                                     // If this cluster exists, append the L2 norm to it.
                                     else {
-                                        nameNormHashMap[ faceList[ i ].first ]?.add( L2Norm( subject , faceList[ i ].second ) )
+                                        if ( metricToBeUsed == "cosine" ) {
+                                            Log.i( "Model" , "Using cosine similarity." )
+                                            nameScoreHashmap[ faceList[ i ].first ]?.add( cosineSimilarity( subject , faceList[ i ].second ) )
+                                        }
+                                        else {
+                                            Log.i( "Model" , "Using L2 norm." )
+                                            nameScoreHashmap[ faceList[ i ].first ]?.add( L2Norm( subject , faceList[ i ].second ) )
+                                        }
                                     }
                                 }
 
-                                // Compute the average of all L2 norms for each cluster.
-                                val avgNorms = nameNormHashMap.values.map{ L2norms ->
-                                    L2norms.toFloatArray().average()
+                                // Compute the average of all scores norms for each cluster.
+                                val avgScores = nameScoreHashmap.values.map{ scores ->
+                                    scores.toFloatArray().average()
                                 }
-                                Log.i( "Model" , "Average norm for each user : $nameNormHashMap" )
+                                Log.i( "Model" , "Average score for each user : $nameScoreHashmap" )
                                 // Get the names of unique users
-                                val names = nameNormHashMap.keys.map{ key -> key }
+                                val names = nameScoreHashmap.keys.map{ key -> key }
 
                                 // Calculate the minimum L2 distance from the stored average L2 norms.
-                                var minL2NormName : String
+                                var bestScoreUserName : String
                                 if ( metricToBeUsed == "cosine" ) {
-                                    minL2NormName = names[ avgNorms.indexOf( avgNorms.max()!! ) ]
+                                    // In case of cosine similarity, choose the highest value.
+                                    bestScoreUserName = names[ avgScores.indexOf( avgScores.max()!! ) ]
                                 }
                                 else {
-                                    minL2NormName = names[ avgNorms.indexOf( avgNorms.min()!! ) ]
+                                    // In case of L2 norm, choose the lowest value.
+                                    bestScoreUserName = names[ avgScores.indexOf( avgScores.min()!! ) ]
                                 }
 
-                                Log.i( "Model" , "Person identified as ${minL2NormName}" )
+                                Log.i( "Model" , "Person identified as ${bestScoreUserName}" )
                                 // Push the results in form of a Prediction.
                                 predictions.add(
                                         Prediction(
                                                 face.boundingBox,
-                                                minL2NormName
+                                                bestScoreUserName
                                         )
                                 )
                             }
@@ -181,6 +190,7 @@ class FrameAnalyser( private var context: Context , private var boundingBoxOverl
         return sqrt( sum )
     }
 
+    // Compute the cosine of the angle between x1 and x2.
     private fun cosineSimilarity( x1 : FloatArray , x2 : FloatArray ) : Float {
         var dotProduct = 0.0f
         var mag1 = 0.0f

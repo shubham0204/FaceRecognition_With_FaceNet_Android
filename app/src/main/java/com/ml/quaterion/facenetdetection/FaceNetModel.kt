@@ -106,6 +106,7 @@ class FaceNetModel( context : Context ) {
         //saveBitmap( croppedBitmap , "image")
         return croppedBitmap
     }
+
     private fun saveBitmap(image: Bitmap, name: String) {
         val fileOutputStream =
                 FileOutputStream(File( Environment.getExternalStorageDirectory()!!.absolutePath + "/$name.png"))
