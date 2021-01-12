@@ -17,6 +17,7 @@ package com.ml.quaterion.facenetdetection
 
 import android.Manifest
 import android.app.ProgressDialog
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
@@ -34,12 +35,14 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.camera.core.*
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.core.net.toFile
 import com.google.android.gms.tasks.OnSuccessListener
 import com.google.mlkit.vision.face.FaceDetectorOptions
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.face.Face
 import com.google.mlkit.vision.face.FaceDetection
 import java.io.*
+import java.net.URI
 import java.util.concurrent.Executors
 
 class MainActivity : AppCompatActivity() {
@@ -115,7 +118,7 @@ class MainActivity : AppCompatActivity() {
         if ( ActivityCompat.checkSelfPermission( this , Manifest.permission.WRITE_EXTERNAL_STORAGE ) ==
                 PackageManager.PERMISSION_GRANTED ){
             // Read image data
-            scanStorageForImages()
+            scanStorageForImages( File( Environment.getExternalStorageDirectory().absolutePath + "/images"))
         }
 
         // Initialize the change_cam_facing button
@@ -132,14 +135,17 @@ class MainActivity : AppCompatActivity() {
             isRearCameraOn = !isRearCameraOn
         }
 
+        //openDirectory()
+
     }
 
-    private fun scanStorageForImages() {
+    private fun scanStorageForImages( imagesDir : File ) {
         progressDialog?.show()
-        val imagesDir = File( Environment.getExternalStorageDirectory()!!.absolutePath + "/images" )
         val imageSubDirs = imagesDir.listFiles()
+        Log.e( "App" , imagesDir.absolutePath )
         if ( imageSubDirs == null ) {
-            progressDialog?.show()
+            progressDialog?.dismiss()
+
         }
         else {
             // List all the images in the "images" dir. Create a Hashmap of <Path,Bitmap> from them.
@@ -256,7 +262,7 @@ class MainActivity : AppCompatActivity() {
         if (requestCode == REQUEST_CODE_PERMISSIONS) {
             if (allPermissionsGranted()) {
                 cameraTextureView.post { startCamera( CameraX.LensFacing.BACK ) }
-                scanStorageForImages()
+                scanStorageForImages( File( Environment.getExternalStorageDirectory().absolutePath + "/images") )
             }
         }
     }

@@ -24,7 +24,12 @@ import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.ImageProxy
 import com.google.mlkit.vision.face.FaceDetectorOptions
 import com.google.mlkit.vision.common.InputImage
+import com.google.mlkit.vision.face.Face
 import com.google.mlkit.vision.face.FaceDetection
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.FileOutputStream
@@ -54,7 +59,7 @@ class FrameAnalyser( private var context: Context , private var boundingBoxOverl
     private val model = FaceNetModel( context )
 
     // Use any one of the two metrics, "cosine" or "l2"
-    private val metricToBeUsed = "cosine"
+    private val metricToBeUsed = "l2"
 
     // Here's where we receive our frames.
     override fun analyze(image: ImageProxy?, rotationDegrees: Int) {
@@ -80,99 +85,106 @@ class FrameAnalyser( private var context: Context , private var boundingBoxOverl
             detector.process(inputImage)
                 .addOnSuccessListener { faces ->
                     // Start a new thread to avoid frequent lags.
-                    Thread {
-                        val predictions = ArrayList<Prediction>()
-                        for (face in faces) {
-                            try {
-                                // Crop the frame using face.boundingBox.
-                                // Convert the cropped Bitmap to a ByteBuffer.
-                                // Finally, feed the ByteBuffer to the FaceNet model.
-                                val subject = model.getFaceEmbedding( bitmap , face.boundingBox , true )
-                                Log.i( "Model" , "New frame received.")
-
-                                // Perform clustering ( grouping )
-                                // Store the clusters in a HashMap. Here, the key would represent the 'name'
-                                // of that cluster and ArrayList<Float> would represent the collection of all
-                                // L2 norms.
-                                val nameScoreHashmap = HashMap<String,ArrayList<Float>>()
-                                for ( i in 0 until faceList.size ) {
-                                    // If this cluster ( i.e an ArrayList with a specific key ) does not exist,
-                                    // initialize a new one.
-                                    if ( nameScoreHashmap[ faceList[ i ].first ] == null ) {
-                                        // Compute the L2 norm and then append it to the ArrayList.
-                                        val p = ArrayList<Float>()
-                                        if ( metricToBeUsed == "cosine" ) {
-                                            Log.i( "Model" , "Using cosine similarity." )
-                                            p.add( cosineSimilarity( subject , faceList[ i ].second ) )
-                                        }
-                                        else {
-                                            Log.i( "Model" , "Using L2 norm." )
-                                            p.add( L2Norm( subject , faceList[ i ].second ) )
-                                        }
-                                        nameScoreHashmap[ faceList[ i ].first ] = p
-                                    }
-                                    // If this cluster exists, append the L2 norm to it.
-                                    else {
-                                        if ( metricToBeUsed == "cosine" ) {
-                                            Log.i( "Model" , "Using cosine similarity." )
-                                            nameScoreHashmap[ faceList[ i ].first ]?.add( cosineSimilarity( subject , faceList[ i ].second ) )
-                                        }
-                                        else {
-                                            Log.i( "Model" , "Using L2 norm." )
-                                            nameScoreHashmap[ faceList[ i ].first ]?.add( L2Norm( subject , faceList[ i ].second ) )
-                                        }
-                                    }
-                                }
-
-                                // Compute the average of all scores norms for each cluster.
-                                val avgScores = nameScoreHashmap.values.map{ scores ->
-                                    scores.toFloatArray().average()
-                                }
-                                Log.i( "Model" , "Average score for each user : $nameScoreHashmap" )
-                                // Get the names of unique users
-                                val names = nameScoreHashmap.keys.map{ key -> key }
-
-                                // Calculate the minimum L2 distance from the stored average L2 norms.
-                                var bestScoreUserName : String
-                                if ( metricToBeUsed == "cosine" ) {
-                                    // In case of cosine similarity, choose the highest value.
-                                    bestScoreUserName = names[ avgScores.indexOf( avgScores.max()!! ) ]
-                                }
-                                else {
-                                    // In case of L2 norm, choose the lowest value.
-                                    bestScoreUserName = names[ avgScores.indexOf( avgScores.min()!! ) ]
-                                }
-
-                                Log.i( "Model" , "Person identified as ${bestScoreUserName}" )
-                                // Push the results in form of a Prediction.
-                                predictions.add(
-                                        Prediction(
-                                                face.boundingBox,
-                                                bestScoreUserName
-                                        )
-                                )
-                            }
-                            catch ( e : Exception ) {
-                                // If any exception occurs with this box and continue with the next boxes.
-                                Log.e( "Model" , "Exception in FrameAnalyser : ${e.message}" )
-                                continue
-                            }
-                        }
-
-                        // Clear the BoundingBoxOverlay and set the new results ( boxes ) to be displayed.
-                        boundingBoxOverlay.faceBoundingBoxes = predictions
-                        boundingBoxOverlay.invalidate()
-
-                        // Declare that the processing has been finished and the system is ready for the next frame.
-                        isProcessing.set(false)
-
-                    }.start()
+                    CoroutineScope( Dispatchers.Main ).launch {
+                        runModel( faces , bitmap )
+                    }
                 }
                 .addOnFailureListener { e ->
                     Log.e("Model", e.message)
                 }
         }
     }
+
+    private suspend fun runModel( faces : List<Face> , cameraFrameBitmap : Bitmap ){
+        withContext( Dispatchers.Default ) {
+            val predictions = ArrayList<Prediction>()
+            for (face in faces) {
+                try {
+                    // Crop the frame using face.boundingBox.
+                    // Convert the cropped Bitmap to a ByteBuffer.
+                    // Finally, feed the ByteBuffer to the FaceNet model.
+                    val subject = model.getFaceEmbedding( cameraFrameBitmap , face.boundingBox , true )
+                    Log.i( "Model" , "New frame received.")
+
+                    // Perform clustering ( grouping )
+                    // Store the clusters in a HashMap. Here, the key would represent the 'name'
+                    // of that cluster and ArrayList<Float> would represent the collection of all
+                    // L2 norms.
+                    val nameScoreHashmap = HashMap<String,ArrayList<Float>>()
+                    for ( i in 0 until faceList.size ) {
+                        // If this cluster ( i.e an ArrayList with a specific key ) does not exist,
+                        // initialize a new one.
+                        if ( nameScoreHashmap[ faceList[ i ].first ] == null ) {
+                            // Compute the L2 norm and then append it to the ArrayList.
+                            val p = ArrayList<Float>()
+                            if ( metricToBeUsed == "cosine" ) {
+                                Log.i( "Model" , "Using cosine similarity." )
+                                p.add( cosineSimilarity( subject , faceList[ i ].second ) )
+                            }
+                            else {
+                                Log.i( "Model" , "Using L2 norm." )
+                                p.add( L2Norm( subject , faceList[ i ].second ) )
+                            }
+                            nameScoreHashmap[ faceList[ i ].first ] = p
+                        }
+                        // If this cluster exists, append the L2 norm to it.
+                        else {
+                            if ( metricToBeUsed == "cosine" ) {
+                                Log.i( "Model" , "Using cosine similarity." )
+                                nameScoreHashmap[ faceList[ i ].first ]?.add( cosineSimilarity( subject , faceList[ i ].second ) )
+                            }
+                            else {
+                                Log.i( "Model" , "Using L2 norm." )
+                                nameScoreHashmap[ faceList[ i ].first ]?.add( L2Norm( subject , faceList[ i ].second ) )
+                            }
+                        }
+                    }
+
+                    // Compute the average of all scores norms for each cluster.
+                    val avgScores = nameScoreHashmap.values.map{ scores ->
+                        scores.toFloatArray().average()
+                    }
+                    Log.i( "Model" , "Average score for each user : $nameScoreHashmap" )
+                    // Get the names of unique users
+                    val names = nameScoreHashmap.keys.map{ key -> key }
+
+                    // Calculate the minimum L2 distance from the stored average L2 norms.
+                    var bestScoreUserName : String
+                    if ( metricToBeUsed == "cosine" ) {
+                        // In case of cosine similarity, choose the highest value.
+                        bestScoreUserName = names[ avgScores.indexOf( avgScores.max()!! ) ]
+                    }
+                    else {
+                        // In case of L2 norm, choose the lowest value.
+                        bestScoreUserName = names[ avgScores.indexOf( avgScores.min()!! ) ]
+                    }
+
+                    Log.i( "Model" , "Person identified as ${bestScoreUserName}" )
+                    // Push the results in form of a Prediction.
+                    predictions.add(
+                            Prediction(
+                                    face.boundingBox,
+                                    bestScoreUserName
+                            )
+                    )
+                }
+                catch ( e : Exception ) {
+                    // If any exception occurs with this box and continue with the next boxes.
+                    Log.e( "Model" , "Exception in FrameAnalyser : ${e.message}" )
+                    continue
+                }
+            }
+            withContext( Dispatchers.Main ) {
+                // Clear the BoundingBoxOverlay and set the new results ( boxes ) to be displayed.
+                boundingBoxOverlay.faceBoundingBoxes = predictions
+                boundingBoxOverlay.invalidate()
+
+                // Declare that the processing has been finished and the system is ready for the next frame.
+                isProcessing.set(false)
+            }
+        }
+    }
+
 
     // Use this method to save a Bitmap to the internal storage of your device.
     private fun saveBitmap(image: Bitmap, name: String) {
