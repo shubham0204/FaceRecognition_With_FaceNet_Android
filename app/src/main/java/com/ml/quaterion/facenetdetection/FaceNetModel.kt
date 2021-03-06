@@ -42,7 +42,10 @@ class FaceNetModel( context : Context ) {
     private var interpreter : Interpreter
 
     // Input image size for FaceNet model.
-    private val imgSize = 160
+    private val imgSize = 112
+
+    // Output embedding size
+    private val embeddingDim = 192
 
     // Image Processor for preprocessing input images.
     private val imageTensorProcessor = ImageProcessor.Builder()
@@ -55,7 +58,7 @@ class FaceNetModel( context : Context ) {
         val interpreterOptions = Interpreter.Options().apply {
             setNumThreads( 4 )
         }
-        interpreter = Interpreter(FileUtil.loadMappedFile(context, "facenet_int8_quant.tflite") , interpreterOptions )
+        interpreter = Interpreter(FileUtil.loadMappedFile(context, "facenet_float16.tflite") , interpreterOptions )
     }
 
     // Gets an face embedding using FaceNet, use the `crop` rect.
@@ -75,7 +78,7 @@ class FaceNetModel( context : Context ) {
     // Run the FaceNet model.
     private fun runFaceNet(inputs: Any): Array<FloatArray> {
         val t1 = System.currentTimeMillis()
-        val outputs = Array(1) { FloatArray(128 ) }
+        val outputs = Array(1) { FloatArray(embeddingDim ) }
         interpreter.run(inputs, outputs)
         Log.i( "Performance" , "FaceNet Inference Speed in ms : ${System.currentTimeMillis() - t1}")
         return outputs
@@ -98,7 +101,7 @@ class FaceNetModel( context : Context ) {
             height = source.height - rect.top
         }
         val croppedBitmap = Bitmap.createBitmap(
-                if ( preRotate ) rotateBitmap( source , -90f )!! else source,
+                if ( preRotate ) rotateBitmap( source )!! else source,
                 rect.left,
                 rect.top,
                 width,
@@ -114,9 +117,9 @@ class FaceNetModel( context : Context ) {
     }
 
 
-    private fun rotateBitmap(source: Bitmap, angle: Float): Bitmap? {
+    private fun rotateBitmap(source: Bitmap): Bitmap? {
         val matrix = Matrix()
-        matrix.postRotate( angle )
+        matrix.postRotate( -90f )
         return Bitmap.createBitmap(source, 0, 0, source.width, source.height, matrix , false )
     }
 

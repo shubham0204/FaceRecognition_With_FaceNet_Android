@@ -43,7 +43,7 @@
         android:layout_height="wrap_content"
         android:background="@android:color/white"
         android:textSize="18sp"
-        android:visibility="visible"
+        android:visibility="gone"
         app:layout_constraintBottom_toBottomOf="@+id/camera_textureView"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent" />

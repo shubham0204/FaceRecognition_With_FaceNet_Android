@@ -52,7 +52,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var cameraTextureView : TextureView
     private lateinit var frameAnalyser  : FrameAnalyser
 
-    // Use Firebase MLKit to crop faces from images present in "/images" folde
+    // Use Firebase MLKit to crop faces from images present in "/images" folder
     private val cropWithBBoxes : Boolean = false
 
     // Initialize Firebase MLKit Face Detector
@@ -142,10 +142,8 @@ class MainActivity : AppCompatActivity() {
     private fun scanStorageForImages( imagesDir : File ) {
         progressDialog?.show()
         val imageSubDirs = imagesDir.listFiles()
-        Log.e( "App" , imagesDir.absolutePath )
         if ( imageSubDirs == null ) {
             progressDialog?.dismiss()
-
         }
         else {
             // List all the images in the "images" dir. Create a Hashmap of <Path,Bitmap> from them.
@@ -155,7 +153,17 @@ class MainActivity : AppCompatActivity() {
                 }
             }
             // Initiate the loop
-            scanImage( 0 )
+            if ( !imageLabelPairs.isEmpty() ){
+                scanImage( 0 )
+            }
+            else {
+                progressDialog?.dismiss()
+                Toast.makeText(
+                        this@MainActivity ,
+                        "Found ${imageSubDirs.size} directories with no images."
+                        , Toast.LENGTH_LONG
+                ).show()
+            }
         }
     }
 
