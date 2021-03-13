@@ -75,6 +75,8 @@ class MainActivity : AppCompatActivity() {
     // By default, switch on the REAR camera.
     private var isRearCameraOn = true ;
 
+    private var numImagesWithNoFaces = 0
+
     // For testing purposes only!
     companion object {
         // This view's VISIBILITY is set to View.GONE in activity_main.xml
@@ -153,7 +155,7 @@ class MainActivity : AppCompatActivity() {
                 }
             }
             // Initiate the loop
-            if ( !imageLabelPairs.isEmpty() ){
+            if (imageLabelPairs.isNotEmpty()){
                 scanImage( 0 )
             }
             else {
@@ -191,11 +193,15 @@ class MainActivity : AppCompatActivity() {
                         )
                 )
             }
+            else {
+                numImagesWithNoFaces += 1
+            }
             // Check if all images have been processed.
             if ( counter + 1  == imageLabelPairs.size ){
                 Toast.makeText(
                         this@MainActivity ,
-                        "Processing completed. Found ${imageData.size} image(s)"
+                        "Processing completed. Found ${imageData.size} image(s). " +
+                                "Faces could not be detected in $numImagesWithNoFaces images."
                         , Toast.LENGTH_LONG
                 ).show()
                 // Dismiss the progressDialog

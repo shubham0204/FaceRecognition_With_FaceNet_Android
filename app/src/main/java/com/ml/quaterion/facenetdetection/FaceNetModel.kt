@@ -42,10 +42,10 @@ class FaceNetModel( context : Context ) {
     private var interpreter : Interpreter
 
     // Input image size for FaceNet model.
-    private val imgSize = 112
+    private val imgSize = 160
 
     // Output embedding size
-    private val embeddingDim = 192
+    private val embeddingDim = 128
 
     // Image Processor for preprocessing input images.
     private val imageTensorProcessor = ImageProcessor.Builder()
@@ -58,7 +58,7 @@ class FaceNetModel( context : Context ) {
         val interpreterOptions = Interpreter.Options().apply {
             setNumThreads( 4 )
         }
-        interpreter = Interpreter(FileUtil.loadMappedFile(context, "facenet_float16.tflite") , interpreterOptions )
+        interpreter = Interpreter(FileUtil.loadMappedFile(context, "facenet_int8.tflite") , interpreterOptions )
     }
 
     // Gets an face embedding using FaceNet, use the `crop` rect.
