@@ -150,7 +150,9 @@ class MainActivity : AppCompatActivity() {
         else {
             // List all the images in the "images" dir. Create a Hashmap of <Path,Bitmap> from them.
             for ( imageSubDir in imagesDir.listFiles() ) {
+                Log.e( "Image Processing"  , "Reading directory -> ${imageSubDir.name}" )
                 for ( image in imageSubDir.listFiles() ) {
+                    Log.e( "Image Processing"  , "Reading file --> ${image.name}" )
                     imageLabelPairs.add( Pair( BitmapFactory.decodeFile( image.absolutePath ) , imageSubDir.name ))
                 }
             }
@@ -162,7 +164,7 @@ class MainActivity : AppCompatActivity() {
                 progressDialog?.dismiss()
                 Toast.makeText(
                         this@MainActivity ,
-                        "Found ${imageSubDirs.size} directories with no images."
+                        "Found ${imageSubDirs.size} directories with no image(s)."
                         , Toast.LENGTH_LONG
                 ).show()
             }

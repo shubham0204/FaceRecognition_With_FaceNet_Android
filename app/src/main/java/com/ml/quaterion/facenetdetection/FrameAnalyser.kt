@@ -109,7 +109,7 @@ class FrameAnalyser( private var context: Context , private var boundingBoxOverl
                     // Perform clustering ( grouping )
                     // Store the clusters in a HashMap. Here, the key would represent the 'name'
                     // of that cluster and ArrayList<Float> would represent the collection of all
-                    // L2 norms.
+                    // L2 norms/ cosine distances.
                     val nameScoreHashmap = HashMap<String,ArrayList<Float>>()
                     for ( i in 0 until faceList.size ) {
                         // If this cluster ( i.e an ArrayList with a specific key ) does not exist,
@@ -123,7 +123,10 @@ class FrameAnalyser( private var context: Context , private var boundingBoxOverl
                             }
                             else {
                                 Log.i( "Model" , "Using L2 norm." )
-                                p.add( L2Norm( subject , faceList[ i ].second ) )
+                                p.add( L2Norm(
+                                        normalizeVector( subject ) ,
+                                        normalizeVector( faceList[ i ].second )
+                                ) )
                             }
                             nameScoreHashmap[ faceList[ i ].first ] = p
                         }
@@ -200,6 +203,11 @@ class FrameAnalyser( private var context: Context , private var boundingBoxOverl
             sum += ( x1[i] - x2[i] ).pow( 2 )
         }
         return sqrt( sum )
+    }
+
+    private fun normalizeVector( x : FloatArray ) : FloatArray {
+        val mag = sqrt( x.map{ xi -> xi.pow( 2 ) }.sum() )
+        return x.map{ xi -> xi/mag }.toFloatArray()
     }
 
     // Compute the cosine of the angle between x1 and x2.
