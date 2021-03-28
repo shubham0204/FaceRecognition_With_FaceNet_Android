@@ -103,7 +103,12 @@ class FrameAnalyser( private var context: Context , private var boundingBoxOverl
                     // Crop the frame using face.boundingBox.
                     // Convert the cropped Bitmap to a ByteBuffer.
                     // Finally, feed the ByteBuffer to the FaceNet model.
-                    val subject = model.getFaceEmbedding( cameraFrameBitmap , face.boundingBox , true )
+                    val subject = model.getFaceEmbedding(
+                            cameraFrameBitmap ,
+                            face.boundingBox ,
+                            true ,
+                            MainActivity.isRearCameraOn
+                             )
                     Log.i( "Model" , "New frame received.")
 
                     // Perform clustering ( grouping )

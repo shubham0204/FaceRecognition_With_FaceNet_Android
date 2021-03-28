@@ -71,19 +71,24 @@ class MainActivity : AppCompatActivity() {
     // To show the number of images processed.
     private var progressDialog : ProgressDialog? = null
 
-    // Boolean value to switch the lens facing.
-    // By default, switch on the REAR camera.
-    private var isRearCameraOn = true ;
-
+    // Number of images in which no faces were detected.
     private var numImagesWithNoFaces = 0
 
     // For testing purposes only!
     companion object {
+
         // This view's VISIBILITY is set to View.GONE in activity_main.xml
         lateinit var logTextView : TextView
+
+        // Boolean value to switch the lens facing.
+        // By default, switch on the REAR camera.
+        // Note: This variable is accessed in FrameAnalyser.kt
+        var isRearCameraOn = true ;
+
         fun setMessage ( message : String ) {
             logTextView.text = message
         }
+
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -187,7 +192,12 @@ class MainActivity : AppCompatActivity() {
                 imageData.add(
                         Pair( sample.second ,
                                 if ( cropWithBBoxes ) {
-                                    model!!.getFaceEmbedding( sample.first , faces[0]!!.boundingBox , false)
+                                    model!!.getFaceEmbedding(
+                                            sample.first ,
+                                            faces[0]!!.boundingBox ,
+                                            false ,
+                                            true ) // We are not checking whether the rear camera is really on/off
+                                            // We pass 'true' here so as to avoid the "180 degrees" flip transform.
                                 }
                                 else {
                                     model!!.getFaceEmbeddingWithoutBBox( sample.first )

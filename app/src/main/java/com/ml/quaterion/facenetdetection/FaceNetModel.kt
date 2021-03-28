@@ -22,6 +22,7 @@ import android.graphics.Matrix
 import android.graphics.Rect
 import android.os.Environment
 import android.util.Log
+import androidx.annotation.Nullable
 import org.tensorflow.lite.Interpreter
 import org.tensorflow.lite.gpu.GpuDelegate
 import org.tensorflow.lite.support.common.FileUtil
@@ -62,10 +63,10 @@ class FaceNetModel( context : Context ) {
     }
 
     // Gets an face embedding using FaceNet, use the `crop` rect.
-    fun getFaceEmbedding( image : Bitmap , crop : Rect , preRotate: Boolean ) : FloatArray {
+    fun getFaceEmbedding( image : Bitmap , crop : Rect , preRotate: Boolean , isRearCameraOn: Boolean ) : FloatArray {
         return runFaceNet(
             convertBitmapToBuffer(
-                cropRectFromBitmap( image , crop , preRotate )
+                cropRectFromBitmap( image , crop , preRotate , isRearCameraOn )
             )
         )[0]
     }
@@ -91,7 +92,7 @@ class FaceNetModel( context : Context ) {
     }
 
     // Crop the given bitmap with the given rect.
-    private fun cropRectFromBitmap(source: Bitmap, rect: Rect , preRotate : Boolean ): Bitmap {
+    private fun cropRectFromBitmap(source: Bitmap, rect: Rect , preRotate : Boolean , isRearCameraOn: Boolean ): Bitmap {
         var width = rect.width()
         var height = rect.height()
         if ( (rect.left + width) > source.width ){
@@ -100,13 +101,22 @@ class FaceNetModel( context : Context ) {
         if ( (rect.top + height ) > source.height ){
             height = source.height - rect.top
         }
-        val croppedBitmap = Bitmap.createBitmap(
-                if ( preRotate ) rotateBitmap( source )!! else source,
+        var croppedBitmap = Bitmap.createBitmap(
+                if ( preRotate ) rotateBitmap( source , -90f )!! else source,
                 rect.left,
                 rect.top,
                 width,
                 height )
+
+        // Add a 180 degrees rotation if the rear camera is on.
+        if ( isRearCameraOn ) {
+            croppedBitmap = rotateBitmap( croppedBitmap , 180f )
+        }
+
+        // Uncomment the below line if you want to save the input image.
+        // Make sure the app has the `WRITE_EXTERNAL_STORAGE` permission.
         //saveBitmap( croppedBitmap , "image")
+
         return croppedBitmap
     }
 
@@ -117,9 +127,9 @@ class FaceNetModel( context : Context ) {
     }
 
 
-    private fun rotateBitmap(source: Bitmap): Bitmap? {
+    private fun rotateBitmap(source: Bitmap , degrees : Float ): Bitmap? {
         val matrix = Matrix()
-        matrix.postRotate( -90f )
+        matrix.postRotate( degrees )
         return Bitmap.createBitmap(source, 0, 0, source.width, source.height, matrix , false )
     }
 
