@@ -1,4 +1,6 @@
  **Store images of people who you would like to recognize and the app, using these images, will classify those people. We don't need to modify the app/retrain any ML model to add more people ( subjects ) for classification**  
+ 
+ > You may like the latest project -> [**Age + Gender Estimation in Android with TensorFlow**](https://github.com/shubham0204/Age-Gender_Estimation_TF-Android)
   
 # Major Updates ( as of December 2020 )  
   
