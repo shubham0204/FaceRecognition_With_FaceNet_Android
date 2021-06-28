@@ -90,7 +90,7 @@ class FrameAnalyser( private var context: Context , private var boundingBoxOverl
                     }
                 }
                 .addOnFailureListener { e ->
-                    Log.e("Model", e.message)
+                    Log.e("Model", e.message!!)
                 }
         }
     }

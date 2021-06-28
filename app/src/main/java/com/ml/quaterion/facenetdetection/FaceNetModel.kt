@@ -17,16 +17,12 @@ package com.ml.quaterion.facenetdetection
 
 import android.content.Context
 import android.graphics.Bitmap
-import android.graphics.BitmapFactory
 import android.graphics.Matrix
 import android.graphics.Rect
 import android.os.Environment
 import android.util.Log
-import androidx.annotation.Nullable
 import org.tensorflow.lite.Interpreter
-import org.tensorflow.lite.gpu.GpuDelegate
 import org.tensorflow.lite.support.common.FileUtil
-import org.tensorflow.lite.support.common.TensorProcessor
 import org.tensorflow.lite.support.common.ops.NormalizeOp
 import org.tensorflow.lite.support.image.ImageProcessor
 import org.tensorflow.lite.support.image.TensorImage
@@ -34,7 +30,6 @@ import org.tensorflow.lite.support.image.ops.ResizeOp
 import java.io.File
 import java.io.FileOutputStream
 import java.nio.ByteBuffer
-import java.nio.ByteOrder
 
 // Utility class for FaceNet model
 class FaceNetModel( context : Context ) {
@@ -43,7 +38,7 @@ class FaceNetModel( context : Context ) {
     private var interpreter : Interpreter
 
     // Input image size for FaceNet model.
-    private val imgSize = 160
+    private val imgSize = 112
 
     // Output embedding size
     private val embeddingDim = 128
@@ -59,7 +54,7 @@ class FaceNetModel( context : Context ) {
         val interpreterOptions = Interpreter.Options().apply {
             setNumThreads( 4 )
         }
-        interpreter = Interpreter(FileUtil.loadMappedFile(context, "facenet_int8.tflite") , interpreterOptions )
+        interpreter = Interpreter(FileUtil.loadMappedFile(context, "mobile_facenet.tflite") , interpreterOptions )
     }
 
     // Gets an face embedding using FaceNet, use the `crop` rect.

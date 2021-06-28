@@ -1,6 +1,19 @@
  **Store images of people who you would like to recognize and the app, using these images, will classify those people. We don't need to modify the app/retrain any ML model to add more people ( subjects ) for classification**  
   
-# Major Updates ( as of December 2020 )  
+# Updates
+
+## Updates ( as of June 2021 )
+
+* The source of the FaceNet model has been changed. We'll now use the FaceNet model 
+from [sirius-ai/MobileFaceNet_TF](https://github.com/sirius-ai/MobileFaceNet_TF)
+* The project is now backwards compatible to API level 23 ( Android Marshmallow )
+
+```
+minSdkVersion 23
+```
+
+  
+## Updates ( as of December 2020 )  
   
 * Lens Facing of the camera can be changed now. A button is provided on the main screen itself.  
 * For multiple images for a single user, we compute the score for each image. An average score is computed for each group.
@@ -46,7 +59,7 @@ the vectors which point out in the same direction.
 In this app, we'll generate two such vectors and use a suitable metric to compare them ( either L2norm or cosine similarity )
 . The one which is the closest will form our desired output.  
   
-You can download the FaceNet Keras `.h5` file from this [repo](https://github.com/nyoki-mtl/keras-facenet).  
+You can download the FaceNet Keras `.h5` file from this [repo](https://github.com/sirius-ai/MobileFaceNet_TF).  
   
 ## Usage  
   

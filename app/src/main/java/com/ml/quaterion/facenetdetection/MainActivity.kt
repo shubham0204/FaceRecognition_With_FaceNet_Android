@@ -155,9 +155,9 @@ class MainActivity : AppCompatActivity() {
         else {
             // List all the images in the "images" dir. Create a Hashmap of <Path,Bitmap> from them.
             for ( imageSubDir in imagesDir.listFiles() ) {
-                Log.e( "Image Processing"  , "Reading directory -> ${imageSubDir.name}" )
+                Log.i( "Image Processing"  , "Reading directory -> ${imageSubDir.name}" )
                 for ( image in imageSubDir.listFiles() ) {
-                    Log.e( "Image Processing"  , "Reading file --> ${image.name}" )
+                    Log.i( "Image Processing"  , "Reading file --> ${image.name}" )
                     imageLabelPairs.add( Pair( BitmapFactory.decodeFile( image.absolutePath ) , imageSubDir.name ))
                 }
             }
@@ -250,7 +250,7 @@ class MainActivity : AppCompatActivity() {
             val parent = cameraTextureView.parent as ViewGroup
             parent.removeView( cameraTextureView )
             parent.addView( cameraTextureView , 0)
-            cameraTextureView.surfaceTexture = it.surfaceTexture
+            cameraTextureView.setSurfaceTexture( it.surfaceTexture )
             updateTransform()
         }
 

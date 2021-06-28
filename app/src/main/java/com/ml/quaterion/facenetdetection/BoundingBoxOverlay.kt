@@ -41,7 +41,18 @@ class BoundingBoxOverlay( context: Context , attributeSet: AttributeSet )
     // Create a Matrix for scaling the bbox coordinates ( for REAR camera )
     private val output2OverlayTransformRearLens = Matrix().apply {
         preScale( xfactor , yfactor )
+    }
 
+    override fun surfaceCreated(holder: SurfaceHolder) {
+        TODO("Not yet implemented")
+    }
+
+    override fun surfaceChanged(holder: SurfaceHolder, format: Int, width: Int, height: Int) {
+        TODO("Not yet implemented")
+    }
+
+    override fun surfaceDestroyed(holder: SurfaceHolder) {
+        TODO("Not yet implemented")
     }
 
     // Create a Matrix for scaling the bbox coordinates ( for FRONT camera )
@@ -71,17 +82,6 @@ class BoundingBoxOverlay( context: Context , attributeSet: AttributeSet )
     // See MainActivity.kt for its uses.
     var addPostScaleTransform = false
 
-    override fun surfaceChanged(holder: SurfaceHolder?, format: Int, width: Int, height: Int) {
-        // NOT IMPLEMENTED
-    }
-
-    override fun surfaceDestroyed(holder: SurfaceHolder?) {
-        // NOT IMPLEMENTED
-    }
-
-    override fun surfaceCreated(holder: SurfaceHolder?) {
-        // NOT IMPLEMENTED
-    }
 
     override fun onDraw(canvas: Canvas?) {
         if ( faceBoundingBoxes != null ) {
@@ -95,7 +95,6 @@ class BoundingBoxOverlay( context: Context , attributeSet: AttributeSet )
                     processedBbox.centerY() ,
                     textPaint
                 )
-                Log.e( "Info" , "Rect received ${processedBbox.toShortString()}")
             }
         }
     }
@@ -110,7 +109,5 @@ class BoundingBoxOverlay( context: Context , attributeSet: AttributeSet )
         }
         return rectf
     }
-
-
 
 }
