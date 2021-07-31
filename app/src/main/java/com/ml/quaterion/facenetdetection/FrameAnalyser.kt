@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Shubham Panchal
+ * Copyright 2021 Shubham Panchal
  * Licensed under the Apache License, Version 2.0 (the "License");
  * You may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -12,13 +12,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.ml.quaterion.facenetdetection
 
 import android.content.Context
 import android.graphics.*
 import android.media.Image
-import android.os.Environment
 import android.util.Log
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.ImageProxy
@@ -33,7 +31,6 @@ import kotlinx.coroutines.withContext
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.FileOutputStream
-import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.collections.ArrayList
 import kotlin.collections.HashMap
 import kotlin.math.pow
@@ -42,55 +39,56 @@ import kotlin.math.sqrt
 // Analyser class to process frames and produce detections.
 class FrameAnalyser( private var context: Context , private var boundingBoxOverlay: BoundingBoxOverlay ) : ImageAnalysis.Analyzer {
 
-    // Configure the FirebaseVisionFaceDetector
     private val realTimeOpts = FaceDetectorOptions.Builder()
             .setPerformanceMode( FaceDetectorOptions.PERFORMANCE_MODE_FAST )
             .build()
     private val detector = FaceDetection.getClient(realTimeOpts)
+    private val model = FaceNetModel( context )
+    private val nameScoreHashmap = HashMap<String,ArrayList<Float>>()
+    private var subject = FloatArray( model.embeddingDim )
 
     // Used to determine whether the incoming frame should be dropped or processed.
-    private var isProcessing = AtomicBoolean(false)
+    private var isProcessing = false
 
     // Store the face embeddings in a ( String , FloatArray ) ArrayList.
     // Where String -> name of the person and FloatArray -> Embedding of the face.
     var faceList = ArrayList<Pair<String,FloatArray>>()
 
-    // FaceNet model utility class
-    private val model = FaceNetModel( context )
-
     // Use any one of the two metrics, "cosine" or "l2"
     private val metricToBeUsed = "l2"
 
-    // Here's where we receive our frames.
-    override fun analyze(image: ImageProxy?, rotationDegrees: Int) {
 
-        // android.media.Image -> android.graphics.Bitmap
-        val bitmap = toBitmap( image?.image!! )
+
+    override fun analyze( image: ImageProxy) {
+        // Rotated bitmap for the FaceNet model
+        val frameBitmap = BitmapUtils.rotateBitmap( BitmapUtils.imageToBitmap( image.image!! ) ,
+            image.imageInfo.rotationDegrees.toFloat() )
+
+        // Configure frameHeight and frameWidth for output2overlay transformation matrix.
+        if ( !boundingBoxOverlay.areDimsInit ) {
+            boundingBoxOverlay.frameHeight = frameBitmap.height
+            boundingBoxOverlay.frameWidth = frameBitmap.width
+        }
 
         // If the previous frame is still being processed, then skip this frame
-        if (isProcessing.get()) {
+        if ( isProcessing || faceList.size == 0 ) {
+            image.close()
             return
         }
         else {
-            // Declare that the current frame is being processed.
-            isProcessing.set(true)
-
-            // Perform face detection
-            val inputImage = InputImage.fromByteArray( BitmaptoNv21( bitmap )
-                    , 640
-                    , 480
-                    , rotationDegrees
-                    , InputImage.IMAGE_FORMAT_NV21
-            )
+            isProcessing = true
+            val inputImage = InputImage.fromMediaImage( image.image , image.imageInfo.rotationDegrees )
             detector.process(inputImage)
                 .addOnSuccessListener { faces ->
-                    // Start a new thread to avoid frequent lags.
                     CoroutineScope( Dispatchers.Main ).launch {
-                        runModel( faces , bitmap )
+                        runModel( faces , frameBitmap )
                     }
                 }
                 .addOnFailureListener { e ->
-                    Log.e("Model", e.message!!)
+                    Log.e("App", e.message!!)
+                }
+                .addOnCompleteListener {
+                    image.close()
                 }
         }
     }
@@ -103,19 +101,14 @@ class FrameAnalyser( private var context: Context , private var boundingBoxOverl
                     // Crop the frame using face.boundingBox.
                     // Convert the cropped Bitmap to a ByteBuffer.
                     // Finally, feed the ByteBuffer to the FaceNet model.
-                    val subject = model.getFaceEmbedding(
+                    subject = model.getFaceEmbedding(
                             cameraFrameBitmap ,
-                            face.boundingBox ,
-                            true ,
-                            MainActivity.isRearCameraOn
-                             )
-                    Log.i( "Model" , "New frame received.")
+                            face.boundingBox )
 
                     // Perform clustering ( grouping )
                     // Store the clusters in a HashMap. Here, the key would represent the 'name'
                     // of that cluster and ArrayList<Float> would represent the collection of all
                     // L2 norms/ cosine distances.
-                    val nameScoreHashmap = HashMap<String,ArrayList<Float>>()
                     for ( i in 0 until faceList.size ) {
                         // If this cluster ( i.e an ArrayList with a specific key ) does not exist,
                         // initialize a new one.
@@ -123,52 +116,42 @@ class FrameAnalyser( private var context: Context , private var boundingBoxOverl
                             // Compute the L2 norm and then append it to the ArrayList.
                             val p = ArrayList<Float>()
                             if ( metricToBeUsed == "cosine" ) {
-                                Log.i( "Model" , "Using cosine similarity." )
                                 p.add( cosineSimilarity( subject , faceList[ i ].second ) )
                             }
                             else {
-                                Log.i( "Model" , "Using L2 norm." )
-                                p.add( L2Norm(
-                                        normalizeVector( subject ) ,
-                                        normalizeVector( faceList[ i ].second )
-                                ) )
+                                p.add( L2Norm( subject , faceList[ i ].second ) )
                             }
                             nameScoreHashmap[ faceList[ i ].first ] = p
                         }
-                        // If this cluster exists, append the L2 norm to it.
+                        // If this cluster exists, append the L2 norm/cosine score to it.
                         else {
                             if ( metricToBeUsed == "cosine" ) {
-                                Log.i( "Model" , "Using cosine similarity." )
                                 nameScoreHashmap[ faceList[ i ].first ]?.add( cosineSimilarity( subject , faceList[ i ].second ) )
                             }
                             else {
-                                Log.i( "Model" , "Using L2 norm." )
                                 nameScoreHashmap[ faceList[ i ].first ]?.add( L2Norm( subject , faceList[ i ].second ) )
                             }
                         }
                     }
 
                     // Compute the average of all scores norms for each cluster.
-                    val avgScores = nameScoreHashmap.values.map{ scores ->
-                        scores.toFloatArray().average()
-                    }
-                    Log.i( "Model" , "Average score for each user : $nameScoreHashmap" )
-                    // Get the names of unique users
-                    val names = nameScoreHashmap.keys.map{ key -> key }
+                    val avgScores = nameScoreHashmap.values.map{ scores -> scores.toFloatArray().average() }
+                    Logger.log( "Average score for each user : $nameScoreHashmap" )
+
+                    val names = nameScoreHashmap.keys.toTypedArray()
+                    nameScoreHashmap.clear()
 
                     // Calculate the minimum L2 distance from the stored average L2 norms.
-                    var bestScoreUserName : String
+                    var bestScoreUserName: String
                     if ( metricToBeUsed == "cosine" ) {
                         // In case of cosine similarity, choose the highest value.
-                        bestScoreUserName = names[ avgScores.indexOf( avgScores.max()!! ) ]
+                        bestScoreUserName = names[ avgScores.indexOf( avgScores.maxOrNull()!! ) ]
                     }
                     else {
                         // In case of L2 norm, choose the lowest value.
-                        bestScoreUserName = names[ avgScores.indexOf( avgScores.min()!! ) ]
+                        bestScoreUserName = names[ avgScores.indexOf( avgScores.minOrNull()!! ) ]
                     }
-
-                    Log.i( "Model" , "Person identified as ${bestScoreUserName}" )
-                    // Push the results in form of a Prediction.
+                    Logger.log( "Person identified as $bestScoreUserName" )
                     predictions.add(
                             Prediction(
                                     face.boundingBox,
@@ -187,33 +170,23 @@ class FrameAnalyser( private var context: Context , private var boundingBoxOverl
                 boundingBoxOverlay.faceBoundingBoxes = predictions
                 boundingBoxOverlay.invalidate()
 
-                // Declare that the processing has been finished and the system is ready for the next frame.
-                isProcessing.set(false)
+                isProcessing = false
             }
         }
     }
 
 
-    // Use this method to save a Bitmap to the internal storage of your device.
-    private fun saveBitmap(image: Bitmap, name: String) {
-        val fileOutputStream =
-            FileOutputStream(File( Environment.getExternalStorageDirectory()!!.absolutePath + "/$name.png"))
-        image.compress(Bitmap.CompressFormat.PNG, 100, fileOutputStream)
-    }
-
     // Compute the L2 norm of ( x2 - x1 )
-    private fun L2Norm(x1 : FloatArray, x2 : FloatArray ) : Float {
+    private fun L2Norm( x1 : FloatArray, x2 : FloatArray ) : Float {
         var sum = 0.0f
+        val mag1 = sqrt( x1.map{ xi -> xi.pow( 2 ) }.sum() )
+        val mag2 = sqrt( x2.map{ xi -> xi.pow( 2 ) }.sum() )
         for( i in x1.indices ) {
-            sum += ( x1[i] - x2[i] ).pow( 2 )
+            sum += ( (x1[i] / mag1) - (x2[i] / mag2) ).pow( 2 )
         }
         return sqrt( sum )
     }
 
-    private fun normalizeVector( x : FloatArray ) : FloatArray {
-        val mag = sqrt( x.map{ xi -> xi.pow( 2 ) }.sum() )
-        return x.map{ xi -> xi/mag }.toFloatArray()
-    }
 
     // Compute the cosine of the angle between x1 and x2.
     private fun cosineSimilarity( x1 : FloatArray , x2 : FloatArray ) : Float {
@@ -230,62 +203,6 @@ class FrameAnalyser( private var context: Context , private var boundingBoxOverl
         mag1 = sqrt(mag1)
         mag2 = sqrt(mag2)
         return dotProduct / (mag1 * mag2)
-    }
-
-    private fun BitmaptoNv21( bitmap: Bitmap ): ByteArray {
-        val argb = IntArray(bitmap.width * bitmap.height )
-        bitmap.getPixels(argb, 0, bitmap.width, 0, 0, bitmap.width, bitmap.height)
-        val yuv = ByteArray(bitmap.height * bitmap.width + 2 * Math.ceil(bitmap.height / 2.0).toInt()
-                * Math.ceil(bitmap.width / 2.0).toInt())
-        encodeYUV420SP( yuv, argb, bitmap.width, bitmap.height)
-        return yuv
-    }
-
-    private fun encodeYUV420SP(yuv420sp: ByteArray, argb: IntArray, width: Int, height: Int) {
-        val frameSize = width * height
-        var yIndex = 0
-        var uvIndex = frameSize
-        var R: Int
-        var G: Int
-        var B: Int
-        var Y: Int
-        var U: Int
-        var V: Int
-        var index = 0
-        for (j in 0 until height) {
-            for (i in 0 until width) {
-                R = argb[index] and 0xff0000 shr 16
-                G = argb[index] and 0xff00 shr 8
-                B = argb[index] and 0xff shr 0
-                Y = (66 * R + 129 * G + 25 * B + 128 shr 8) + 16
-                U = (-38 * R - 74 * G + 112 * B + 128 shr 8) + 128
-                V = (112 * R - 94 * G - 18 * B + 128 shr 8) + 128
-                yuv420sp[yIndex++] = (if (Y < 0) 0 else if (Y > 255) 255 else Y).toByte()
-                if (j % 2 == 0 && index % 2 == 0) {
-                    yuv420sp[uvIndex++] = (if (V < 0) 0 else if (V > 255) 255 else V).toByte()
-                    yuv420sp[uvIndex++] = (if (U < 0) 0 else if (U > 255) 255 else U).toByte()
-                }
-                index++
-            }
-        }
-    }
-
-    private fun toBitmap( image : Image ): Bitmap {
-        val yBuffer = image.planes[0].buffer
-        val uBuffer = image.planes[1].buffer
-        val vBuffer = image.planes[2].buffer
-        val ySize = yBuffer.remaining()
-        val uSize = uBuffer.remaining()
-        val vSize = vBuffer.remaining()
-        val nv21 = ByteArray(ySize + uSize + vSize)
-        yBuffer.get(nv21, 0, ySize)
-        vBuffer.get(nv21, ySize, vSize)
-        uBuffer.get(nv21, ySize + vSize, uSize)
-        val yuvImage = YuvImage(nv21, ImageFormat.NV21, image.width, image.height, null)
-        val out = ByteArrayOutputStream()
-        yuvImage.compressToJpeg(Rect(0, 0, yuvImage.width, yuvImage.height), 50, out)
-        val yuv = out.toByteArray()
-        return BitmapFactory.decodeByteArray(yuv, 0, yuv.size)
     }
 
 }

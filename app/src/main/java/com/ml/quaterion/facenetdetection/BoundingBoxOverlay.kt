@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Shubham Panchal
+ * Copyright 2021 Shubham Panchal
  * Licensed under the Apache License, Version 2.0 (the "License");
  * You may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -12,102 +12,81 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.ml.quaterion.facenetdetection
 
 import android.content.Context
 import android.graphics.*
 import android.util.AttributeSet
-import android.util.Log
 import android.view.SurfaceHolder
 import android.view.SurfaceView
+import androidx.core.graphics.toRectF
 
 // Defines an overlay on which the boxes and text will be drawn.
 class BoundingBoxOverlay( context: Context , attributeSet: AttributeSet )
     : SurfaceView( context , attributeSet ) , SurfaceHolder.Callback {
 
-    // DisplayMetrics for the current display
-    private val displayMetrics = context.resources.displayMetrics
-
-    // Width and height of the device screen in pixels.
-    private val dpHeight = displayMetrics.heightPixels
-    private val dpWidth = displayMetrics.widthPixels
-
-    // Our boxes will be predicted on a 640 * 480 image. So, we need to scale the boxes to the device screen's width and
-    // height
-    private val xfactor = dpWidth.toFloat() / 480f
-    private val yfactor = dpHeight.toFloat() / 640f
-
-    // Create a Matrix for scaling the bbox coordinates ( for REAR camera )
-    private val output2OverlayTransformRearLens = Matrix().apply {
-        preScale( xfactor , yfactor )
-    }
-
-    override fun surfaceCreated(holder: SurfaceHolder) {
-        TODO("Not yet implemented")
-    }
-
-    override fun surfaceChanged(holder: SurfaceHolder, format: Int, width: Int, height: Int) {
-        TODO("Not yet implemented")
-    }
-
-    override fun surfaceDestroyed(holder: SurfaceHolder) {
-        TODO("Not yet implemented")
-    }
-
-    // Create a Matrix for scaling the bbox coordinates ( for FRONT camera )
-    // For the front camera, we need to have an additional postScale(), so as to avoid
-    // mirror images of boxes.
-    private val output2OverlayTransformFrontLens = Matrix().apply {
-        preScale( xfactor , yfactor )
-        postScale( -1f , 1f , dpWidth/2f , dpHeight/2f )
-    }
+    // Variables used to compute output2overlay transformation matrix
+    // These are assigned in FrameAnalyser.kt
+    var areDimsInit = false
+    var frameHeight = 0
+    var frameWidth = 0
 
     // This var is assigned in FrameAnalyser.kt
-    var faceBoundingBoxes : ArrayList<Prediction>? = null
+    var faceBoundingBoxes: ArrayList<Prediction>? = null
 
-    // Defines a Paint object for the boxes.
+    private var output2OverlayTransform: Matrix = Matrix()
+
+    // Paint for boxes and text
     private val boxPaint = Paint().apply {
-        color = Color.parseColor( "#4D90caf9" )
+        color = Color.parseColor("#4D90caf9")
         style = Paint.Style.FILL
     }
-    // Defines a Paint object for the text.
     private val textPaint = Paint().apply {
         strokeWidth = 2.0f
         textSize = 32f
         color = Color.WHITE
     }
 
-    // Determines which Matrix should be used for transformation.
-    // See MainActivity.kt for its uses.
-    var addPostScaleTransform = false
+
+    override fun surfaceCreated(holder: SurfaceHolder) {
+        TODO("Not yet implemented")
+    }
+
+
+    override fun surfaceChanged(holder: SurfaceHolder, format: Int, width: Int, height: Int) {
+        TODO("Not yet implemented")
+    }
+
+
+    override fun surfaceDestroyed(holder: SurfaceHolder) {
+        TODO("Not yet implemented")
+    }
 
 
     override fun onDraw(canvas: Canvas?) {
-        if ( faceBoundingBoxes != null ) {
-            for ( face in faceBoundingBoxes!!) {
-                val processedBbox = processBBox( face.bbox )
-                // Draw boxes and text
-                canvas?.drawRoundRect( processedBbox , 16f , 16f , boxPaint )
-                canvas?.drawText(
-                    face.label ,
-                    processedBbox.centerX() ,
-                    processedBbox.centerY() ,
-                    textPaint
-                )
+        if (faceBoundingBoxes != null) {
+            if (!areDimsInit) {
+                val viewWidth = canvas!!.width.toFloat()
+                val viewHeight = canvas.height.toFloat()
+                val xFactor: Float = viewWidth / frameWidth.toFloat()
+                val yFactor: Float = viewHeight / frameHeight.toFloat()
+                // Scale and mirror the coordinates ( required for front lens )
+                output2OverlayTransform.preScale(xFactor, yFactor)
+                output2OverlayTransform.postScale(-1f, 1f, viewWidth / 2f, viewHeight / 2f)
+                areDimsInit = true
+            } else {
+                for (face in faceBoundingBoxes!!) {
+                    val boundingBox = face.bbox.toRectF()
+                    output2OverlayTransform.mapRect(boundingBox)
+                    canvas?.drawRoundRect(boundingBox, 16f, 16f, boxPaint)
+                    canvas?.drawText(
+                        face.label,
+                        boundingBox.centerX(),
+                        boundingBox.centerY(),
+                        textPaint
+                    )
+                }
             }
         }
     }
-
-    // Apply the scale transform matrix to the boxes.
-    private fun processBBox( bbox : Rect ) : RectF {
-        val rectf = RectF( bbox )
-        // Add suitable Matrix transform
-        when ( addPostScaleTransform ) {
-            true -> output2OverlayTransformFrontLens.mapRect( rectf )
-            false -> output2OverlayTransformRearLens.mapRect( rectf )
-        }
-        return rectf
-    }
-
 }
