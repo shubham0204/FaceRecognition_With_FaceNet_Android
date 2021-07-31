@@ -120,7 +120,7 @@ the names of sub directories within `images`. For every image, collect bounding 
 model and get the embeddings ( as `FloatArray` ). Now, we create a `HashMap<String,FloatArray>` object where we store the names of   
 the sub directories as keys and the embeddings as their corresponding values. 
    
-See [`MainActivity.kt`]() and [`FileReader.kt`]() for the code.
+See [`MainActivity.kt`](https://github.com/shubham0204/FaceRecognition_With_FaceNet_Android/blob/master/app/src/main/java/com/ml/quaterion/facenetdetection/MainActivity.kt) and [`FileReader.kt`](https://github.com/shubham0204/FaceRecognition_With_FaceNet_Android/blob/master/app/src/main/java/com/ml/quaterion/facenetdetection/FileReader.kt) for the code.
   
 The above procedure is carried out only on the app's startup. The steps below will execute on each camera frame.  
   
@@ -132,7 +132,7 @@ form clusters for each user. We compute the average score for each cluster. The 
 The final output is then stored as a `Prediction` and passed to the `BoundingBoxOverlay` which draws boxes and   
 text.  
 
-See [`FaceNetModel.kt`]() and [`FrameAnalyser.kt`]() for the code.
+See [`FaceNetModel.kt`](https://github.com/shubham0204/FaceRecognition_With_FaceNet_Android/blob/master/app/src/main/java/com/ml/quaterion/facenetdetection/FaceNetModel.kt) and [`FrameAnalyser.kt`](https://github.com/shubham0204/FaceRecognition_With_FaceNet_Android/blob/master/app/src/main/java/com/ml/quaterion/facenetdetection/FrameAnalyser.kt) for the code.
   
 ## Limitations  
   
