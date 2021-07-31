@@ -99,7 +99,9 @@ from the [`assets`](https://github.com/shubham0204/FaceRecognition_With_FaceNet_
   
 So, an user can store images in his/her device in a specific folder. If, for instance, the user wants the app to recognize  
 two people namely "Rahul" and "Neeta". So the user needs to store the images by creating two directories namely "Rahul" and "Neeta"   
-and store their images inside of these directories.  
+and store their images inside of these directories. For instance, the file structure for the working example ( as shown above in the GIF ),
+
+![Intended File Structure](images/fig_4.png)
 
 The app will then process these images and classify these people thereafter. For face recognition, Firebase MLKit is used which   
 fetches bounding boxes for all the faces present in the camera frame.  
