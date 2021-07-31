@@ -99,7 +99,9 @@ from the [`assets`](https://github.com/shubham0204/FaceRecognition_With_FaceNet_
   
 So, an user can store images in his/her device in a specific folder. If, for instance, the user wants the app to recognize  
 two people namely "Rahul" and "Neeta". So the user needs to store the images by creating two directories namely "Rahul" and "Neeta"   
-and store their images inside of these directories.  
+and store their images inside of these directories. For instance, the file structure for the working example ( as shown above in the GIF ),
+
+![Intended File Structure](images/fig_4.png)
 
 The app will then process these images and classify these people thereafter. For face recognition, Firebase MLKit is used which   
 fetches bounding boxes for all the faces present in the camera frame.  
@@ -120,7 +122,7 @@ the names of sub directories within `images`. For every image, collect bounding 
 model and get the embeddings ( as `FloatArray` ). Now, we create a `HashMap<String,FloatArray>` object where we store the names of   
 the sub directories as keys and the embeddings as their corresponding values. 
    
-See [`MainActivity.kt`]() and [`FileReader.kt`]() for the code.
+See [`MainActivity.kt`](https://github.com/shubham0204/FaceRecognition_With_FaceNet_Android/blob/master/app/src/main/java/com/ml/quaterion/facenetdetection/MainActivity.kt) and [`FileReader.kt`](https://github.com/shubham0204/FaceRecognition_With_FaceNet_Android/blob/master/app/src/main/java/com/ml/quaterion/facenetdetection/FileReader.kt) for the code.
   
 The above procedure is carried out only on the app's startup. The steps below will execute on each camera frame.  
   
@@ -132,7 +134,7 @@ form clusters for each user. We compute the average score for each cluster. The 
 The final output is then stored as a `Prediction` and passed to the `BoundingBoxOverlay` which draws boxes and   
 text.  
 
-See [`FaceNetModel.kt`]() and [`FrameAnalyser.kt`]() for the code.
+See [`FaceNetModel.kt`](https://github.com/shubham0204/FaceRecognition_With_FaceNet_Android/blob/master/app/src/main/java/com/ml/quaterion/facenetdetection/FaceNetModel.kt) and [`FrameAnalyser.kt`](https://github.com/shubham0204/FaceRecognition_With_FaceNet_Android/blob/master/app/src/main/java/com/ml/quaterion/facenetdetection/FrameAnalyser.kt) for the code.
   
 ## Limitations  
   
