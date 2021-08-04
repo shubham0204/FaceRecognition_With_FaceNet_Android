@@ -36,6 +36,11 @@ We don't need to modify the app/retrain any ML model to add more people ( subjec
 - The lens facing has been changed to `FRONT` and users won't be able to change the lens facing. The app will open the front 
   camera of the device as a default.
   
+- The source of the FaceNet Keras model -> [nyoki-mtl/keras-facenet](https://github.com/nyoki-mtl/keras-facenet)
+
+- The image normalization step is now included in the TFLite model itself using a custom layer. We only need to cast images
+  to `float32` using the `CastOp` from TFLite Support Library.
+  
 - A `TextView` is now added on the screen which logs important information like number of images scanned, similarity score for 
   users, etc.
 
@@ -90,7 +95,7 @@ the vectors which point out in the same direction.
 In this app, we'll generate two such vectors and use a suitable metric to compare them ( either L2norm or cosine similarity ). 
 The one which is the closest will form our desired output.  
   
-You can download the FaceNet Keras `.h5` file from this [repo](https://github.com/sirius-ai/MobileFaceNet_TF) and TFLite model 
+You can download the FaceNet Keras `.h5` file from this [repo](https://github.com/nyoki-mtl/keras-facenet) and TFLite model 
 from the [`assets`](https://github.com/shubham0204/FaceRecognition_With_FaceNet_Android/tree/master/app/src/main/assets) folder.
   
 ## Usage  ( Intended file structure for the app )

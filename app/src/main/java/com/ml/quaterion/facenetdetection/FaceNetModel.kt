@@ -20,9 +20,10 @@ import android.graphics.Matrix
 import android.graphics.Rect
 import android.os.Environment
 import android.util.Log
+import org.tensorflow.lite.DataType
 import org.tensorflow.lite.Interpreter
 import org.tensorflow.lite.support.common.FileUtil
-import org.tensorflow.lite.support.common.ops.NormalizeOp
+import org.tensorflow.lite.support.common.ops.CastOp
 import org.tensorflow.lite.support.image.ImageProcessor
 import org.tensorflow.lite.support.image.TensorImage
 import org.tensorflow.lite.support.image.ops.ResizeOp
@@ -34,7 +35,7 @@ import java.nio.ByteBuffer
 class FaceNetModel( private var context : Context ) {
 
     // Input image size for FaceNet model.
-    private val imgSize = 112
+    private val imgSize = 160
 
     // Output embedding size
     val embeddingDim = 128
@@ -42,17 +43,15 @@ class FaceNetModel( private var context : Context ) {
     private var interpreter : Interpreter
     private val imageTensorProcessor = ImageProcessor.Builder()
         .add( ResizeOp( imgSize , imgSize , ResizeOp.ResizeMethod.BILINEAR ) )
-        .add( NormalizeOp( 127.5f , 127.5f ) )
+        .add( CastOp( DataType.FLOAT32 ) )
         .build()
-
-
 
     init {
         // Initialize TFLiteInterpreter
         val interpreterOptions = Interpreter.Options().apply {
             setNumThreads( 4 )
         }
-        interpreter = Interpreter(FileUtil.loadMappedFile(context, "mobile_facenet.tflite") , interpreterOptions )
+        interpreter = Interpreter(FileUtil.loadMappedFile(context, "model.tflite") , interpreterOptions )
     }
 
 
