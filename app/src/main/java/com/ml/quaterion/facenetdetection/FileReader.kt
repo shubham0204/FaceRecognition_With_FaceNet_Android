@@ -108,7 +108,6 @@ class FileReader( private var context: Context ) {
             }
     }
 
-
     // Suspend function for running the FaceNet model
     private suspend fun getEmbedding( croppedFaceBitmap: Bitmap , bbox : Rect ) =
         withContext( Dispatchers.Default ) {

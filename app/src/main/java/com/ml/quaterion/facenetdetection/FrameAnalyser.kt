@@ -15,24 +15,18 @@
 package com.ml.quaterion.facenetdetection
 
 import android.content.Context
-import android.graphics.*
-import android.media.Image
+import android.graphics.Bitmap
 import android.util.Log
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.ImageProxy
-import com.google.mlkit.vision.face.FaceDetectorOptions
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.face.Face
 import com.google.mlkit.vision.face.FaceDetection
+import com.google.mlkit.vision.face.FaceDetectorOptions
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import java.io.ByteArrayOutputStream
-import java.io.File
-import java.io.FileOutputStream
-import kotlin.collections.ArrayList
-import kotlin.collections.HashMap
 import kotlin.math.pow
 import kotlin.math.sqrt
 
@@ -142,14 +136,12 @@ class FrameAnalyser( private var context: Context , private var boundingBoxOverl
                     nameScoreHashmap.clear()
 
                     // Calculate the minimum L2 distance from the stored average L2 norms.
-                    var bestScoreUserName: String
-                    if ( metricToBeUsed == "cosine" ) {
+                    val bestScoreUserName: String = if ( metricToBeUsed == "cosine" ) {
                         // In case of cosine similarity, choose the highest value.
-                        bestScoreUserName = names[ avgScores.indexOf( avgScores.maxOrNull()!! ) ]
-                    }
-                    else {
+                        names[ avgScores.indexOf( avgScores.maxOrNull()!! ) ]
+                    } else {
                         // In case of L2 norm, choose the lowest value.
-                        bestScoreUserName = names[ avgScores.indexOf( avgScores.minOrNull()!! ) ]
+                        names[ avgScores.indexOf( avgScores.minOrNull()!! ) ]
                     }
                     Logger.log( "Person identified as $bestScoreUserName" )
                     predictions.add(
