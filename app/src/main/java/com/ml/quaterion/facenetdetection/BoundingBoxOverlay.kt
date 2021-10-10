@@ -77,7 +77,8 @@ class BoundingBoxOverlay( context: Context , attributeSet: AttributeSet )
                 output2OverlayTransform.preScale(xFactor, yFactor)
                 output2OverlayTransform.postScale(-1f, 1f, viewWidth / 2f, viewHeight / 2f)
                 areDimsInit = true
-            } else {
+            }
+            else {
                 for (face in faceBoundingBoxes!!) {
                     val boundingBox = face.bbox.toRectF()
                     output2OverlayTransform.mapRect(boundingBox)

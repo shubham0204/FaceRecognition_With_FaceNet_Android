@@ -54,16 +54,6 @@ class FrameAnalyser( private var context: Context , private var boundingBoxOverl
 
 
     override fun analyze( image: ImageProxy) {
-        // Rotated bitmap for the FaceNet model
-        val frameBitmap = BitmapUtils.rotateBitmap( BitmapUtils.imageToBitmap( image.image!! ) ,
-            image.imageInfo.rotationDegrees.toFloat() )
-
-        // Configure frameHeight and frameWidth for output2overlay transformation matrix.
-        if ( !boundingBoxOverlay.areDimsInit ) {
-            boundingBoxOverlay.frameHeight = frameBitmap.height
-            boundingBoxOverlay.frameWidth = frameBitmap.width
-        }
-
         // If the previous frame is still being processed, then skip this frame
         if ( isProcessing || faceList.size == 0 ) {
             image.close()
@@ -71,15 +61,23 @@ class FrameAnalyser( private var context: Context , private var boundingBoxOverl
         }
         else {
             isProcessing = true
+
+            // Rotated bitmap for the FaceNet model
+            val frameBitmap = BitmapUtils.rotateBitmap( BitmapUtils.imageToBitmap( image.image!! ) ,
+                image.imageInfo.rotationDegrees.toFloat() )
+
+            // Configure frameHeight and frameWidth for output2overlay transformation matrix.
+            if ( !boundingBoxOverlay.areDimsInit ) {
+                boundingBoxOverlay.frameHeight = frameBitmap.height
+                boundingBoxOverlay.frameWidth = frameBitmap.width
+            }
+
             val inputImage = InputImage.fromMediaImage( image.image , image.imageInfo.rotationDegrees )
             detector.process(inputImage)
                 .addOnSuccessListener { faces ->
                     CoroutineScope( Dispatchers.Main ).launch {
                         runModel( faces , frameBitmap )
                     }
-                }
-                .addOnFailureListener { e ->
-                    Log.e("App", e.message!!)
                 }
                 .addOnCompleteListener {
                     image.close()

@@ -15,6 +15,12 @@ We don't need to modify the app/retrain any ML model to add more people ( subjec
   
 ## What's New
 
+### Updates - October 2021
+
+- For requesting the `CAMERA` permission and access to the `images` folder, the request code is now handled 
+  by the system itself. See [Request app permissions](https://developer.android.com/training/permissions/requesting).
+  
+
 ### Major Updates - July 2021
 
 - We'll now use the `PreviewView` from Camera instead of directly using the `TextureView`. 

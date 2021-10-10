@@ -110,6 +110,7 @@ class FaceNetModel( private var context : Context ) {
         return croppedBitmap
     }
 
+
     // Op to perform standardization
     // x' = ( x - mean ) / std_dev
     class StandardizeOp : TensorOperator {
