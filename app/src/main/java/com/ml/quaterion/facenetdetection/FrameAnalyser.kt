@@ -75,7 +75,7 @@ class FrameAnalyser( private var context: Context , private var boundingBoxOverl
             val inputImage = InputImage.fromMediaImage( image.image , image.imageInfo.rotationDegrees )
             detector.process(inputImage)
                 .addOnSuccessListener { faces ->
-                    CoroutineScope( Dispatchers.Main ).launch {
+                    CoroutineScope( Dispatchers.Default ).launch {
                         runModel( faces , frameBitmap )
                     }
                 }
