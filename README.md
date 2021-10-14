@@ -17,6 +17,8 @@ We don't need to modify the app/retrain any ML model to add more people ( subjec
 
 ### Updates - October 2021
 
+- See the [`face_verification_feature`](https://github.com/shubham0204/FaceRecognition_With_FaceNet_Android/tree/face_verification_feature) for the face verification feature. Here, the app shows an UNKNOWN class for a face which isn't scanned from the images folder. See issue [#23](https://github.com/shubham0204/FaceRecognition_With_FaceNet_Android/issues/23) for detailed explanation of the problem a user faced.
+
 - For requesting the `CAMERA` permission and access to the `images` folder, the request code is now handled 
   by the system itself. See [Request app permissions](https://developer.android.com/training/permissions/requesting).
   
