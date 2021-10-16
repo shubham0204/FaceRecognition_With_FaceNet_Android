@@ -15,10 +15,15 @@ We don't need to modify the app/retrain any ML model to add more people ( subjec
   
 ## What's New
 
-### Updates - October 2021
+### Major Updates - October 2021
 
-- See the [`face_verification_feature`](https://github.com/shubham0204/FaceRecognition_With_FaceNet_Android/tree/face_verification_feature) for the face verification feature. Here, the app shows an UNKNOWN class for a face which isn't scanned from the images folder. See issue [#23](https://github.com/shubham0204/FaceRecognition_With_FaceNet_Android/issues/23) for detailed explanation of the problem a user faced.
-
+- The source of the FaceNet model is now [Sefik Ilkin Serengil](https://github.com/serengil)'s 
+  [DeepFace](https://github.com/serengil/deepface), a lightweight framework for face recognition and facial attribute analysis. 
+  Hence, the users can now use two models, `FaceNet` and `FaceNet512`.
+  
+- The app will now classify users, whose images **were not** scanned from the `images` folder, as `UNKNOWN`.
+  The app uses thresholds both for L2 norm and cosine similarity to achieve this functionality.
+  
 - For requesting the `CAMERA` permission and access to the `images` folder, the request code is now handled 
   by the system itself. See [Request app permissions](https://developer.android.com/training/permissions/requesting).
   

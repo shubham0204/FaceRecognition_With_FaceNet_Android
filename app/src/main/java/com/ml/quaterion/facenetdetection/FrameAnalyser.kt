@@ -23,6 +23,8 @@ import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.face.Face
 import com.google.mlkit.vision.face.FaceDetection
 import com.google.mlkit.vision.face.FaceDetectorOptions
+import com.ml.quaterion.facenetdetection.model.FaceNetModel
+import com.ml.quaterion.facenetdetection.model.Models
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -37,7 +39,7 @@ class FrameAnalyser( private var context: Context , private var boundingBoxOverl
             .setPerformanceMode( FaceDetectorOptions.PERFORMANCE_MODE_FAST )
             .build()
     private val detector = FaceDetection.getClient(realTimeOpts)
-    private val model = FaceNetModel( context )
+    private val model = FaceNetModel( context , Models.FACENET )
     private val nameScoreHashmap = HashMap<String,ArrayList<Float>>()
     private var subject = FloatArray( model.embeddingDim )
 
@@ -49,7 +51,7 @@ class FrameAnalyser( private var context: Context , private var boundingBoxOverl
     var faceList = ArrayList<Pair<String,FloatArray>>()
 
     // Use any one of the two metrics, "cosine" or "l2"
-    private val metricToBeUsed = "l2"
+    private val metricToBeUsed = "cosine"
 
 
 
@@ -63,8 +65,7 @@ class FrameAnalyser( private var context: Context , private var boundingBoxOverl
             isProcessing = true
 
             // Rotated bitmap for the FaceNet model
-            val frameBitmap = BitmapUtils.rotateBitmap( BitmapUtils.imageToBitmap( image.image!! ) ,
-                image.imageInfo.rotationDegrees.toFloat() )
+            val frameBitmap = BitmapUtils.imageToBitmap( image.image!! , image.imageInfo.rotationDegrees )
 
             // Configure frameHeight and frameWidth for output2overlay transformation matrix.
             if ( !boundingBoxOverlay.areDimsInit ) {
@@ -136,10 +137,20 @@ class FrameAnalyser( private var context: Context , private var boundingBoxOverl
                     // Calculate the minimum L2 distance from the stored average L2 norms.
                     val bestScoreUserName: String = if ( metricToBeUsed == "cosine" ) {
                         // In case of cosine similarity, choose the highest value.
-                        names[ avgScores.indexOf( avgScores.maxOrNull()!! ) ]
+                        if ( avgScores.maxOrNull()!! > model.model.cosineThreshold ) {
+                            names[ avgScores.indexOf( avgScores.maxOrNull()!! ) ]
+                        }
+                        else {
+                            "Unknown"
+                        }
                     } else {
                         // In case of L2 norm, choose the lowest value.
-                        names[ avgScores.indexOf( avgScores.minOrNull()!! ) ]
+                        if ( avgScores.minOrNull()!! > model.model.l2Threshold ) {
+                            "Unknown"
+                        }
+                        else {
+                            names[ avgScores.indexOf( avgScores.minOrNull()!! ) ]
+                        }
                     }
                     Logger.log( "Person identified as $bestScoreUserName" )
                     predictions.add(
@@ -168,31 +179,16 @@ class FrameAnalyser( private var context: Context , private var boundingBoxOverl
 
     // Compute the L2 norm of ( x2 - x1 )
     private fun L2Norm( x1 : FloatArray, x2 : FloatArray ) : Float {
-        var sum = 0.0f
-        val mag1 = sqrt( x1.map{ xi -> xi.pow( 2 ) }.sum() )
-        val mag2 = sqrt( x2.map{ xi -> xi.pow( 2 ) }.sum() )
-        for( i in x1.indices ) {
-            sum += ( (x1[i] / mag1) - (x2[i] / mag2) ).pow( 2 )
-        }
-        return sqrt( sum )
+        return sqrt( x1.mapIndexed{ i , xi -> (xi - x2[ i ]).pow( 2 ) }.sum() )
     }
 
 
     // Compute the cosine of the angle between x1 and x2.
     private fun cosineSimilarity( x1 : FloatArray , x2 : FloatArray ) : Float {
-        var dotProduct = 0.0f
-        var mag1 = 0.0f
-        var mag2 = 0.0f
-        var sum = 0.0f
-        for (i in x1.indices) {
-            dotProduct += (x1[i] * x2[i])
-            mag1 += x1[i].toDouble().pow(2.0).toFloat()
-            mag2 += x2[i].toDouble().pow(2.0).toFloat()
-            sum += (x1[i] - x2[i]).pow(2)
-        }
-        mag1 = sqrt(mag1)
-        mag2 = sqrt(mag2)
-        return dotProduct / (mag1 * mag2)
+        val mag1 = sqrt( x1.map { it * it }.sum() )
+        val mag2 = sqrt( x2.map { it * it }.sum() )
+        val dot = x1.mapIndexed{ i , xi -> xi * x2[ i ] }.sum()
+        return dot / (mag1 * mag2)
     }
 
 }

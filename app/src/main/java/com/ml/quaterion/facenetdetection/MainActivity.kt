@@ -43,6 +43,7 @@ import androidx.core.content.ContextCompat
 import androidx.documentfile.provider.DocumentFile
 import androidx.lifecycle.LifecycleOwner
 import com.google.common.util.concurrent.ListenableFuture
+import com.ml.quaterion.facenetdetection.model.FaceNetModel
 import java.io.*
 import java.util.concurrent.Executors
 
@@ -101,7 +102,6 @@ class MainActivity : AppCompatActivity() {
         boundingBoxOverlay.setZOrderOnTop( true )
 
         frameAnalyser = FrameAnalyser( this , boundingBoxOverlay)
-        model = FaceNetModel( this )
         fileReader = FileReader( this )
 
 

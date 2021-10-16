@@ -20,6 +20,8 @@ import android.graphics.Rect
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.face.FaceDetection
 import com.google.mlkit.vision.face.FaceDetectorOptions
+import com.ml.quaterion.facenetdetection.model.FaceNetModel
+import com.ml.quaterion.facenetdetection.model.Models
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -32,7 +34,7 @@ class FileReader( private var context: Context ) {
         .setPerformanceMode( FaceDetectorOptions.PERFORMANCE_MODE_FAST )
         .build()
     private val detector = FaceDetection.getClient( realTimeOpts )
-    private val faceNetModel = FaceNetModel( context )
+    private val faceNetModel = FaceNetModel( context , Models.FACENET )
     private val coroutineScope = CoroutineScope( Dispatchers.Main )
     private var numImagesWithNoFaces = 0
     private var imageCounter = 0
