@@ -14,6 +14,7 @@
  */
 package com.ml.quaterion.facenetdetection
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.Bitmap
 import android.util.Log
@@ -55,7 +56,8 @@ class FrameAnalyser( private var context: Context , private var boundingBoxOverl
 
 
 
-    override fun analyze( image: ImageProxy) {
+    @SuppressLint("UnsafeOptInUsageError")
+    override fun analyze(image: ImageProxy) {
         // If the previous frame is still being processed, then skip this frame
         if ( isProcessing || faceList.size == 0 ) {
             image.close()
