@@ -16,7 +16,6 @@ package com.ml.quaterion.facenetdetection.model
 
 import android.content.Context
 import android.graphics.Bitmap
-import android.graphics.Rect
 import android.util.Log
 import com.ml.quaterion.facenetdetection.Logger
 import org.tensorflow.lite.DataType
@@ -62,21 +61,16 @@ class FaceNetModel( private var context : Context , var model : ModelInfo) {
                 // Number of threads for computation
                 setNumThreads( 4 )
             }
+            setUseXNNPACK( true )
         }
         interpreter = Interpreter(FileUtil.loadMappedFile(context, model.assetsFilename ) , interpreterOptions )
         Logger.log("Using ${model.name} model.")
     }
 
 
-    // Gets an face embedding using FaceNet, use the `crop` rect.
-    fun getFaceEmbedding( image : Bitmap , crop : Rect ) : FloatArray {
-        return runFaceNet( convertBitmapToBuffer( cropRectFromBitmap( image , crop )))[0]
-    }
-
-
-    // Gets an face embedding using FaceNet, assuming the image contains a cropped face
-    fun getCroppedFaceEmbedding( image : Bitmap ) : FloatArray {
-        return runFaceNet( convertBitmapToBuffer( image ) )[0]
+    // Gets an face embedding using FaceNet.
+    fun getFaceEmbedding( image : Bitmap ) : FloatArray {
+        return runFaceNet( convertBitmapToBuffer( image ))[0]
     }
 
 
@@ -85,7 +79,7 @@ class FaceNetModel( private var context : Context , var model : ModelInfo) {
         val t1 = System.currentTimeMillis()
         val faceNetModelOutputs = Array( 1 ){ FloatArray( embeddingDim ) }
         interpreter.run( inputs, faceNetModelOutputs )
-        Log.i( "Performance" , "FaceNet Inference Speed in ms : ${System.currentTimeMillis() - t1}")
+        Log.i( "Performance" , "${model.name} Inference Speed in ms : ${System.currentTimeMillis() - t1}")
         return faceNetModelOutputs
     }
 
@@ -93,23 +87,6 @@ class FaceNetModel( private var context : Context , var model : ModelInfo) {
     // Resize the given bitmap and convert it to a ByteBuffer
     private fun convertBitmapToBuffer( image : Bitmap) : ByteBuffer {
         return imageTensorProcessor.process( TensorImage.fromBitmap( image ) ).buffer
-    }
-
-
-    // Crop the given bitmap with the given rect.
-    private fun cropRectFromBitmap(source: Bitmap, rect: Rect ): Bitmap {
-        var width = rect.width()
-        var height = rect.height()
-        if ( (rect.left + width) > source.width ){
-            width = source.width - rect.left
-        }
-        if ( (rect.top + height ) > source.height ){
-            height = source.height - rect.top
-        }
-        val croppedBitmap = Bitmap.createBitmap( source , rect.left , rect.top , width , height )
-        // Uncomment the below line if you want to save the input image.
-        // BitmapUtils.saveBitmap( context , croppedBitmap , "source" )
-        return croppedBitmap
     }
 
 

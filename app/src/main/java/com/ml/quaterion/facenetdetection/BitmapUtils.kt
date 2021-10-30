@@ -30,6 +30,23 @@ class BitmapUtils {
 
     companion object {
 
+        // Crop the given bitmap with the given rect.
+        fun cropRectFromBitmap(source: Bitmap, rect: Rect ): Bitmap {
+            var width = rect.width()
+            var height = rect.height()
+            if ( (rect.left + width) > source.width ){
+                width = source.width - rect.left
+            }
+            if ( (rect.top + height ) > source.height ){
+                height = source.height - rect.top
+            }
+            val croppedBitmap = Bitmap.createBitmap( source , rect.left , rect.top , width , height )
+            // Uncomment the below line if you want to save the input image.
+            // BitmapUtils.saveBitmap( context , croppedBitmap , "source" )
+            return croppedBitmap
+        }
+
+
         // Get the image as a Bitmap from given Uri
         // Source -> https://developer.android.com/training/data-storage/shared/documents-files#bitmap
         fun getBitmapFromUri( contentResolver : ContentResolver , uri: Uri): Bitmap {

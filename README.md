@@ -17,9 +17,20 @@ We don't need to modify the app/retrain any ML model to add more people ( subjec
 
 ### Major Updates - October 2021
 
+- The app now has a **face mask detection feature** with models obtained from 
+  [achen353/Face-Mask-Detector](https://github.com/achen353/Face-Mask-Detector) repo.
+  You may off it by setting `isMaskDetectionOn` in `FrameAnalyser.kt` to `false`.
+  
 - The source of the FaceNet model is now [Sefik Ilkin Serengil](https://github.com/serengil)'s 
   [DeepFace](https://github.com/serengil/deepface), a lightweight framework for face recognition and facial attribute analysis. 
-  Hence, the users can now use two models, `FaceNet` and `FaceNet512`.
+  Hence, the users can now use two models, `FaceNet` and `FaceNet512`. Also, the int-8 quantized versions of these 
+  models are also available. See the following line ine `FrameAnalyser.kt`,
+  
+```
+private val model = FaceNetModel( context , Models.FACENET_QUANTIZED )
+```
+
+You may use different configurations in the `Models` class.
   
 - The app will now classify users, whose images **were not** scanned from the `images` folder, as `UNKNOWN`.
   The app uses thresholds both for L2 norm and cosine similarity to achieve this functionality.

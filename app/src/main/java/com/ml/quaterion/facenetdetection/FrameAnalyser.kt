@@ -25,6 +25,7 @@ import com.google.mlkit.vision.face.Face
 import com.google.mlkit.vision.face.FaceDetection
 import com.google.mlkit.vision.face.FaceDetectorOptions
 import com.ml.quaterion.facenetdetection.model.FaceNetModel
+import com.ml.quaterion.facenetdetection.model.MaskDetectionModel
 import com.ml.quaterion.facenetdetection.model.Models
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -40,7 +41,12 @@ class FrameAnalyser( private var context: Context , private var boundingBoxOverl
             .setPerformanceMode( FaceDetectorOptions.PERFORMANCE_MODE_FAST )
             .build()
     private val detector = FaceDetection.getClient(realTimeOpts)
-    private val model = FaceNetModel( context , Models.FACENET )
+
+    // You may the change the models here.
+    // Use the model configs in Models.kt
+    // Default is Models.FACENET ; Quantized models are faster
+    private val model = FaceNetModel( context , Models.FACENET_QUANTIZED )
+
     private val nameScoreHashmap = HashMap<String,ArrayList<Float>>()
     private var subject = FloatArray( model.embeddingDim )
 
@@ -53,6 +59,15 @@ class FrameAnalyser( private var context: Context , private var boundingBoxOverl
 
     // Use any one of the two metrics, "cosine" or "l2"
     private val metricToBeUsed = "cosine"
+
+    // Use this variable to enable/disable mask detection.
+    private val isMaskDetectionOn = true
+    private val maskDetectionModel = MaskDetectionModel( context )
+
+
+    init {
+        boundingBoxOverlay.drawMaskLabel = isMaskDetectionOn
+    }
 
 
 
@@ -96,9 +111,14 @@ class FrameAnalyser( private var context: Context , private var boundingBoxOverl
                     // Crop the frame using face.boundingBox.
                     // Convert the cropped Bitmap to a ByteBuffer.
                     // Finally, feed the ByteBuffer to the FaceNet model.
-                    subject = model.getFaceEmbedding(
-                            cameraFrameBitmap ,
-                            face.boundingBox )
+                    val croppedBitmap = BitmapUtils.cropRectFromBitmap( cameraFrameBitmap , face.boundingBox )
+                    subject = model.getFaceEmbedding( croppedBitmap )
+
+                    // Perform face mask detection on the cropped frame Bitmap.
+                    var maskLabel = ""
+                    if ( isMaskDetectionOn ) {
+                        maskLabel = maskDetectionModel.detectMask( croppedBitmap )
+                    }
 
                     // Perform clustering ( grouping )
                     // Store the clusters in a HashMap. Here, the key would represent the 'name'
@@ -157,8 +177,9 @@ class FrameAnalyser( private var context: Context , private var boundingBoxOverl
                     Logger.log( "Person identified as $bestScoreUserName" )
                     predictions.add(
                             Prediction(
-                                    face.boundingBox,
-                                    bestScoreUserName
+                                face.boundingBox,
+                                bestScoreUserName ,
+                                maskLabel
                             )
                     )
                 }

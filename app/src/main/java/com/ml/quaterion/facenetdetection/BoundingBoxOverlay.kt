@@ -37,6 +37,9 @@ class BoundingBoxOverlay( context: Context , attributeSet: AttributeSet )
     // This var is assigned in FrameAnalyser.kt
     var faceBoundingBoxes: ArrayList<Prediction>? = null
 
+    // Determines whether or not "mask" or "no mask" should be displayed.
+    var drawMaskLabel = true
+
     private var output2OverlayTransform: Matrix = Matrix()
 
     // Paint for boxes and text
@@ -89,6 +92,14 @@ class BoundingBoxOverlay( context: Context , attributeSet: AttributeSet )
                         boundingBox.centerY(),
                         textPaint
                     )
+                    if ( drawMaskLabel ) {
+                        canvas?.drawText(
+                            face.maskLabel,
+                            boundingBox.centerX(),
+                            boundingBox.centerY() + 32,
+                            textPaint
+                        )
+                    }
                 }
             }
         }
