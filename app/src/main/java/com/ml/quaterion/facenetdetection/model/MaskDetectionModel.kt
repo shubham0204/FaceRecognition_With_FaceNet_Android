@@ -17,11 +17,14 @@ import java.nio.ByteBuffer
 // Source -> https://github.com/achen353/Face-Mask-Detector
 class MaskDetectionModel( context: Context ) {
 
+    val MASK = "mask"
+    val NO_MASK = "no mask"
+
     private val imgSize = 224
     private val numClasses = 2
     private val classIndexToLabel = mapOf(
-        0 to "mask" ,
-        1 to "no mask" ,
+        0 to MASK ,
+        1 to NO_MASK ,
     )
     private val modelName = "mask_detector.tflite"
 
