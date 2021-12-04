@@ -15,6 +15,21 @@ We don't need to modify the app/retrain any ML model to add more people ( subjec
   
 ## What's New
 
+### Updates - December 2021
+
+- Users can now control the use of `GpuDelegate` and `XNNPack` using `useGpu` and `useXNNPack` in 
+`MainActivity.kt`,
+  
+```
+ // Use the device's GPU to perform faster computations.
+ // Refer https://www.tensorflow.org/lite/performance/gpu
+ private val useGpu = true
+
+ // Use XNNPack to accelerate inference.
+ // Refer https://blog.tensorflow.org/2020/07/accelerating-tensorflow-lite-xnnpack-integration.html
+ private val useXNNPack = true
+```
+
 ### Major Updates - October 2021
 
 - The app now has a **face mask detection feature** with models obtained from 
@@ -24,10 +39,10 @@ We don't need to modify the app/retrain any ML model to add more people ( subjec
 - The source of the FaceNet model is now [Sefik Ilkin Serengil](https://github.com/serengil)'s 
   [DeepFace](https://github.com/serengil/deepface), a lightweight framework for face recognition and facial attribute analysis. 
   Hence, the users can now use two models, `FaceNet` and `FaceNet512`. Also, the int-8 quantized versions of these 
-  models are also available. See the following line ine `FrameAnalyser.kt`,
+  models are also available. See the following line ine `MainActivity.kt`,
   
 ```
-private val model = FaceNetModel( context , Models.FACENET_QUANTIZED )
+private val modelInfo = Models.FACENET
 ```
 
 You may use different configurations in the `Models` class.

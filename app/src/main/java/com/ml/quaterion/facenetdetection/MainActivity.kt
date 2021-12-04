@@ -44,6 +44,7 @@ import androidx.documentfile.provider.DocumentFile
 import androidx.lifecycle.LifecycleOwner
 import com.google.common.util.concurrent.ListenableFuture
 import com.ml.quaterion.facenetdetection.model.FaceNetModel
+import com.ml.quaterion.facenetdetection.model.Models
 import java.io.*
 import java.util.concurrent.Executors
 
@@ -60,10 +61,27 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var previewView : PreviewView
     private lateinit var frameAnalyser  : FrameAnalyser
-    private lateinit var model : FaceNetModel
+    private lateinit var faceNetModel : FaceNetModel
     private lateinit var fileReader : FileReader
     private lateinit var cameraProviderFuture : ListenableFuture<ProcessCameraProvider>
     private lateinit var sharedPreferences: SharedPreferences
+
+    // <----------------------- User controls --------------------------->
+
+    // Use the device's GPU to perform faster computations.
+    // Refer https://www.tensorflow.org/lite/performance/gpu
+    private val useGpu = true
+
+    // Use XNNPack to accelerate inference.
+    // Refer https://blog.tensorflow.org/2020/07/accelerating-tensorflow-lite-xnnpack-integration.html
+    private val useXNNPack = true
+
+    // You may the change the models here.
+    // Use the model configs in Models.kt
+    // Default is Models.FACENET ; Quantized models are faster
+    private val modelInfo = Models.FACENET
+
+    // <---------------------------------------------------------------->
 
 
     companion object {
@@ -101,8 +119,9 @@ class MainActivity : AppCompatActivity() {
         boundingBoxOverlay.setWillNotDraw( false )
         boundingBoxOverlay.setZOrderOnTop( true )
 
-        frameAnalyser = FrameAnalyser( this , boundingBoxOverlay)
-        fileReader = FileReader( this )
+        faceNetModel = FaceNetModel( this , modelInfo , useGpu , useXNNPack )
+        frameAnalyser = FrameAnalyser( this , boundingBoxOverlay , faceNetModel )
+        fileReader = FileReader( faceNetModel )
 
 
         // We'll only require the CAMERA permission from the user.

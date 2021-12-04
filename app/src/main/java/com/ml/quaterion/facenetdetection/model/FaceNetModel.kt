@@ -35,7 +35,10 @@ import kotlin.math.pow
 import kotlin.math.sqrt
 
 // Utility class for FaceNet model
-class FaceNetModel( private var context : Context , var model : ModelInfo) {
+class FaceNetModel( context : Context ,
+                    var model : ModelInfo ,
+                    useGpu : Boolean ,
+                    useXNNPack : Boolean) {
 
     // Input image size for FaceNet model.
     private val imgSize = model.inputDims
@@ -55,13 +58,15 @@ class FaceNetModel( private var context : Context , var model : ModelInfo) {
             // Add the GPU Delegate if supported.
             // See -> https://www.tensorflow.org/lite/performance/gpu#android
             if ( CompatibilityList().isDelegateSupportedOnThisDevice ) {
-                addDelegate( GpuDelegate( CompatibilityList().bestOptionsForThisDevice ))
+                if ( useGpu ) {
+                    addDelegate( GpuDelegate( CompatibilityList().bestOptionsForThisDevice ))
+                }
             }
             else {
                 // Number of threads for computation
                 setNumThreads( 4 )
             }
-            setUseXNNPACK( true )
+            setUseXNNPACK( useXNNPack )
         }
         interpreter = Interpreter(FileUtil.loadMappedFile(context, model.assetsFilename ) , interpreterOptions )
         Logger.log("Using ${model.name} model.")

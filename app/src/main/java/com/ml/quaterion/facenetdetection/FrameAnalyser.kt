@@ -26,7 +26,6 @@ import com.google.mlkit.vision.face.FaceDetection
 import com.google.mlkit.vision.face.FaceDetectorOptions
 import com.ml.quaterion.facenetdetection.model.FaceNetModel
 import com.ml.quaterion.facenetdetection.model.MaskDetectionModel
-import com.ml.quaterion.facenetdetection.model.Models
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -35,17 +34,15 @@ import kotlin.math.pow
 import kotlin.math.sqrt
 
 // Analyser class to process frames and produce detections.
-class FrameAnalyser( private var context: Context , private var boundingBoxOverlay: BoundingBoxOverlay ) : ImageAnalysis.Analyzer {
+class FrameAnalyser( private var context: Context ,
+                     private var boundingBoxOverlay: BoundingBoxOverlay ,
+                     private var model: FaceNetModel
+                     ) : ImageAnalysis.Analyzer {
 
     private val realTimeOpts = FaceDetectorOptions.Builder()
             .setPerformanceMode( FaceDetectorOptions.PERFORMANCE_MODE_FAST )
             .build()
     private val detector = FaceDetection.getClient(realTimeOpts)
-
-    // You may the change the models here.
-    // Use the model configs in Models.kt
-    // Default is Models.FACENET ; Quantized models are faster
-    private val model = FaceNetModel( context , Models.FACENET_QUANTIZED )
 
     private val nameScoreHashmap = HashMap<String,ArrayList<Float>>()
     private var subject = FloatArray( model.embeddingDim )
@@ -57,12 +54,17 @@ class FrameAnalyser( private var context: Context , private var boundingBoxOverl
     // Where String -> name of the person and FloatArray -> Embedding of the face.
     var faceList = ArrayList<Pair<String,FloatArray>>()
 
+    private val maskDetectionModel = MaskDetectionModel( context )
+
+    // <-------------- User controls --------------------------->
+
     // Use any one of the two metrics, "cosine" or "l2"
-    private val metricToBeUsed = "cosine"
+    private val metricToBeUsed = "l2"
 
     // Use this variable to enable/disable mask detection.
     private val isMaskDetectionOn = true
-    private val maskDetectionModel = MaskDetectionModel( context )
+
+    // <-------------------------------------------------------->
 
 
     init {
@@ -102,6 +104,7 @@ class FrameAnalyser( private var context: Context , private var boundingBoxOverl
                 }
         }
     }
+
 
     private suspend fun runModel( faces : List<Face> , cameraFrameBitmap : Bitmap ){
         withContext( Dispatchers.Default ) {
