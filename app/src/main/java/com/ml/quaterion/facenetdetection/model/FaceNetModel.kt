@@ -67,6 +67,7 @@ class FaceNetModel( context : Context ,
                 setNumThreads( 4 )
             }
             setUseXNNPACK( useXNNPack )
+            setUseNNAPI(true)
         }
         interpreter = Interpreter(FileUtil.loadMappedFile(context, model.assetsFilename ) , interpreterOptions )
         Logger.log("Using ${model.name} model.")
