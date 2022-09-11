@@ -43,6 +43,7 @@ import androidx.core.content.ContextCompat
 import androidx.documentfile.provider.DocumentFile
 import androidx.lifecycle.LifecycleOwner
 import com.google.common.util.concurrent.ListenableFuture
+import com.ml.quaterion.facenetdetection.databinding.ActivityMainBinding
 import com.ml.quaterion.facenetdetection.model.FaceNetModel
 import com.ml.quaterion.facenetdetection.model.Models
 import java.io.*
@@ -59,6 +60,7 @@ class MainActivity : AppCompatActivity() {
     // Shared Pref key to check if the data was stored.
     private val SHARED_PREF_IS_DATA_STORED_KEY = "is_data_stored"
 
+    private lateinit var activityMainBinding : ActivityMainBinding
     private lateinit var previewView : PreviewView
     private lateinit var frameAnalyser  : FrameAnalyser
     private lateinit var faceNetModel : FaceNetModel
@@ -105,17 +107,17 @@ class MainActivity : AppCompatActivity() {
         }
         else {
             window.decorView.systemUiVisibility = View.SYSTEM_UI_FLAG_FULLSCREEN
-
         }
-        setContentView(R.layout.activity_main)
+        activityMainBinding = ActivityMainBinding.inflate( layoutInflater )
+        setContentView( activityMainBinding.root )
 
         // Implementation of CameraX preview
 
-        previewView = findViewById( R.id.preview_view )
-        logTextView = findViewById( R.id.log_textview )
+        previewView = activityMainBinding.previewView
+        logTextView = activityMainBinding.logTextview
         logTextView.movementMethod = ScrollingMovementMethod()
         // Necessary to keep the Overlay above the PreviewView so that the boxes are visible.
-        val boundingBoxOverlay = findViewById<BoundingBoxOverlay>( R.id.bbox_overlay )
+        val boundingBoxOverlay = activityMainBinding.bboxOverlay
         boundingBoxOverlay.setWillNotDraw( false )
         boundingBoxOverlay.setZOrderOnTop( true )
 
