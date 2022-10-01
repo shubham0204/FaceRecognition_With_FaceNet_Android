@@ -6,6 +6,4 @@ class ModelInfo(
     val cosineThreshold : Float ,
     val l2Threshold : Float ,
     val outputDims : Int ,
-    val inputDims : Int ) {
-
-}
+    val inputDims : Int )

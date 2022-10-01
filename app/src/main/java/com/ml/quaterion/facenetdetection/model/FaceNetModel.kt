@@ -57,17 +57,17 @@ class FaceNetModel( context : Context ,
         val interpreterOptions = Interpreter.Options().apply {
             // Add the GPU Delegate if supported.
             // See -> https://www.tensorflow.org/lite/performance/gpu#android
-            if ( CompatibilityList().isDelegateSupportedOnThisDevice ) {
-                if ( useGpu ) {
+            if ( useGpu ) {
+                if ( CompatibilityList().isDelegateSupportedOnThisDevice ) {
                     addDelegate( GpuDelegate( CompatibilityList().bestOptionsForThisDevice ))
                 }
             }
             else {
                 // Number of threads for computation
-                setNumThreads( 4 )
+                numThreads = 4
             }
             setUseXNNPACK( useXNNPack )
-            setUseNNAPI(true)
+            useNNAPI = true
         }
         interpreter = Interpreter(FileUtil.loadMappedFile(context, model.assetsFilename ) , interpreterOptions )
         Logger.log("Using ${model.name} model.")

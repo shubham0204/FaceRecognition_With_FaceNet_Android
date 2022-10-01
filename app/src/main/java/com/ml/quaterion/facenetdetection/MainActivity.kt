@@ -111,8 +111,6 @@ class MainActivity : AppCompatActivity() {
         activityMainBinding = ActivityMainBinding.inflate( layoutInflater )
         setContentView( activityMainBinding.root )
 
-        // Implementation of CameraX preview
-
         previewView = activityMainBinding.previewView
         logTextView = activityMainBinding.logTextview
         logTextView.movementMethod = ScrollingMovementMethod()

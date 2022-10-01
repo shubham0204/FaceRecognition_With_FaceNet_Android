@@ -92,7 +92,7 @@ class FrameAnalyser( private var context: Context ,
                 boundingBoxOverlay.frameWidth = frameBitmap.width
             }
 
-            val inputImage = InputImage.fromMediaImage( image.image , image.imageInfo.rotationDegrees )
+            val inputImage = InputImage.fromMediaImage(image.image!!, image.imageInfo.rotationDegrees )
             detector.process(inputImage)
                 .addOnSuccessListener { faces ->
                     CoroutineScope( Dispatchers.Default ).launch {

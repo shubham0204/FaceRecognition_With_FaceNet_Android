@@ -44,7 +44,7 @@ class MaskDetectionModel( context: Context ) {
             }
             else {
                 // Number of threads for computation
-                setNumThreads( 4 )
+                numThreads = 4
             }
             setUseXNNPACK(true)
         }
@@ -61,7 +61,7 @@ class MaskDetectionModel( context: Context ) {
     // Kotlin Extension function for arg max.
     // See https://kotlinlang.org/docs/extensions.html
     private fun FloatArray.argmax() : Int {
-        return this.indexOf( this.maxOrNull()!! )
+        return this.indexOfFirst { it == this.maxOrNull()!! }
     }
 
 

@@ -15,6 +15,13 @@ We don't need to modify the app/retrain any ML model to add more people ( subjec
   
 ## What's New
 
+### Updates - September 2022
+
+- Modified `settings.gradle` to use the new plugin management system.
+- The conversion of `Bitmap` to NV21-formatted `ByteArray` ( YUV420 ) is now transformed into a suspending function 
+to avoid blocking of the UI thread when a large number of images are being processed.
+- 
+
 ### Updates - December 2021
 
 - Users can now control the use of `GpuDelegate` and `XNNPack` using `useGpu` and `useXNNPack` in 

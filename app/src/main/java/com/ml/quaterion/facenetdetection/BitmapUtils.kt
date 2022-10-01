@@ -20,6 +20,9 @@ import android.graphics.*
 import android.media.Image
 import android.net.Uri
 import android.os.ParcelFileDescriptor
+import android.util.Log
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.FileDescriptor
@@ -109,13 +112,13 @@ class BitmapUtils {
 
         // Convert the given Bitmap to NV21 ByteArray
         // See this comment -> https://github.com/firebase/quickstart-android/issues/932#issuecomment-531204396
-        fun bitmapToNV21ByteArray(bitmap: Bitmap): ByteArray {
+        suspend fun bitmapToNV21ByteArray(bitmap: Bitmap): ByteArray = withContext(Dispatchers.Default) {
             val argb = IntArray(bitmap.width * bitmap.height )
             bitmap.getPixels(argb, 0, bitmap.width, 0, 0, bitmap.width, bitmap.height)
             val yuv = ByteArray(bitmap.height * bitmap.width + 2 * Math.ceil(bitmap.height / 2.0).toInt()
                     * Math.ceil(bitmap.width / 2.0).toInt())
             encodeYUV420SP( yuv, argb, bitmap.width, bitmap.height)
-            return yuv
+            return@withContext yuv
         }
 
         private fun encodeYUV420SP(yuv420sp: ByteArray, argb: IntArray, width: Int, height: Int) {
