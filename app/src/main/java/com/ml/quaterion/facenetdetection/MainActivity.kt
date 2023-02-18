@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Shubham Panchal
+ * Copyright 2023 Shubham Panchal
  * Licensed under the Apache License, Version 2.0 (the "License");
  * You may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -181,6 +181,7 @@ class MainActivity : AppCompatActivity() {
         val imageFrameAnalysis = ImageAnalysis.Builder()
             .setTargetResolution(Size( 480, 640 ) )
             .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
+            .setOutputImageFormat(ImageAnalysis.OUTPUT_IMAGE_FORMAT_RGBA_8888)
             .build()
         imageFrameAnalysis.setAnalyzer(Executors.newSingleThreadExecutor(), frameAnalyser )
         cameraProvider.bindToLifecycle(this as LifecycleOwner, cameraSelector, preview , imageFrameAnalysis  )

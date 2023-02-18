@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Shubham Panchal
+ * Copyright 2023 Shubham Panchal
  * Licensed under the Apache License, Version 2.0 (the "License");
  * You may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,6 +17,7 @@ package com.ml.quaterion.facenetdetection
 import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.util.Log
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.ImageProxy
@@ -84,7 +85,11 @@ class FrameAnalyser( private var context: Context ,
             isProcessing = true
 
             // Rotated bitmap for the FaceNet model
-            val frameBitmap = BitmapUtils.imageToBitmap( image.image!! , image.imageInfo.rotationDegrees )
+            val cameraXImage = image.image!!
+            var frameBitmap = Bitmap.createBitmap( cameraXImage.width , cameraXImage.height , Bitmap.Config.ARGB_8888 )
+            frameBitmap.copyPixelsFromBuffer( image.planes[0].buffer )
+            frameBitmap = BitmapUtils.rotateBitmap( frameBitmap , image.imageInfo.rotationDegrees.toFloat() )
+            //val frameBitmap = BitmapUtils.imageToBitmap( image.image!! , image.imageInfo.rotationDegrees )
 
             // Configure frameHeight and frameWidth for output2overlay transformation matrix.
             if ( !boundingBoxOverlay.areDimsInit ) {
@@ -92,7 +97,7 @@ class FrameAnalyser( private var context: Context ,
                 boundingBoxOverlay.frameWidth = frameBitmap.width
             }
 
-            val inputImage = InputImage.fromMediaImage(image.image!!, image.imageInfo.rotationDegrees )
+            val inputImage = InputImage.fromBitmap( frameBitmap , 0 )
             detector.process(inputImage)
                 .addOnSuccessListener { faces ->
                     CoroutineScope( Dispatchers.Default ).launch {
@@ -209,7 +214,6 @@ class FrameAnalyser( private var context: Context ,
                 // Clear the BoundingBoxOverlay and set the new results ( boxes ) to be displayed.
                 boundingBoxOverlay.faceBoundingBoxes = predictions
                 boundingBoxOverlay.invalidate()
-
                 isProcessing = false
             }
         }

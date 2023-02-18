@@ -40,7 +40,7 @@ class MaskDetectionModel( context: Context ) {
             // Add the GPU Delegate if supported.
             // See -> https://www.tensorflow.org/lite/performance/gpu#android
             if ( CompatibilityList().isDelegateSupportedOnThisDevice ) {
-                addDelegate( GpuDelegate( CompatibilityList().bestOptionsForThisDevice ))
+                addDelegate( GpuDelegate( CompatibilityList().bestOptionsForThisDevice ) )
             }
             else {
                 // Number of threads for computation
