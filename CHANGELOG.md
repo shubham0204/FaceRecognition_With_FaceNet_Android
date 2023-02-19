@@ -1,3 +1,3 @@
-- Fixed issue #31
-- Set CameraX output format to `OUTPUT_IMAGE_FORMAT_RGBA_8888`
-- Updated copyright
+- Added inference time logging under `Performance` tag
+- Added new project banner
+- Updated `README.md`

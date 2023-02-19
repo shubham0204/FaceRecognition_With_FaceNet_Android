@@ -15,6 +15,7 @@
 package com.ml.quaterion.facenetdetection
 
 import android.content.Context
+import android.graphics.Camera
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Matrix
@@ -22,6 +23,7 @@ import android.graphics.Paint
 import android.util.AttributeSet
 import android.view.SurfaceHolder
 import android.view.SurfaceView
+import androidx.camera.core.CameraSelector
 import androidx.core.graphics.toRectF
 
 // Defines an overlay on which the boxes and text will be drawn.
@@ -33,6 +35,8 @@ class BoundingBoxOverlay( context: Context , attributeSet: AttributeSet )
     var areDimsInit = false
     var frameHeight = 0
     var frameWidth = 0
+
+    var cameraFacing : Int = CameraSelector.LENS_FACING_FRONT
 
     // This var is assigned in FrameAnalyser.kt
     var faceBoundingBoxes: ArrayList<Prediction>? = null
@@ -78,7 +82,9 @@ class BoundingBoxOverlay( context: Context , attributeSet: AttributeSet )
                 val yFactor: Float = viewHeight / frameHeight.toFloat()
                 // Scale and mirror the coordinates ( required for front lens )
                 output2OverlayTransform.preScale(xFactor, yFactor)
-                output2OverlayTransform.postScale(-1f, 1f, viewWidth / 2f, viewHeight / 2f)
+                if( cameraFacing == CameraSelector.LENS_FACING_FRONT ) {
+                    output2OverlayTransform.postScale(-1f, 1f, viewWidth / 2f, viewHeight / 2f)
+                }
                 areDimsInit = true
             }
             else {

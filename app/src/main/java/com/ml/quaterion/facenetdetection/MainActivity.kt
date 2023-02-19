@@ -83,6 +83,9 @@ class MainActivity : AppCompatActivity() {
     // Default is Models.FACENET ; Quantized models are faster
     private val modelInfo = Models.FACENET
 
+    // Camera Facing
+    private val cameraFacing = CameraSelector.LENS_FACING_BACK
+
     // <---------------------------------------------------------------->
 
 
@@ -116,6 +119,7 @@ class MainActivity : AppCompatActivity() {
         logTextView.movementMethod = ScrollingMovementMethod()
         // Necessary to keep the Overlay above the PreviewView so that the boxes are visible.
         val boundingBoxOverlay = activityMainBinding.bboxOverlay
+        boundingBoxOverlay.cameraFacing = cameraFacing
         boundingBoxOverlay.setWillNotDraw( false )
         boundingBoxOverlay.setZOrderOnTop( true )
 
@@ -175,7 +179,7 @@ class MainActivity : AppCompatActivity() {
     private fun bindPreview(cameraProvider : ProcessCameraProvider) {
         val preview : Preview = Preview.Builder().build()
         val cameraSelector : CameraSelector = CameraSelector.Builder()
-            .requireLensFacing( CameraSelector.LENS_FACING_FRONT )
+            .requireLensFacing( cameraFacing )
             .build()
         preview.setSurfaceProvider( previewView.surfaceProvider )
         val imageFrameAnalysis = ImageAnalysis.Builder()

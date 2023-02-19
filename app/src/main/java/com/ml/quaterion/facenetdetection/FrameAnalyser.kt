@@ -35,7 +35,7 @@ import kotlin.math.pow
 import kotlin.math.sqrt
 
 // Analyser class to process frames and produce detections.
-class FrameAnalyser( private var context: Context ,
+class FrameAnalyser( context: Context ,
                      private var boundingBoxOverlay: BoundingBoxOverlay ,
                      private var model: FaceNetModel
                      ) : ImageAnalysis.Analyzer {
@@ -56,6 +56,7 @@ class FrameAnalyser( private var context: Context ,
     var faceList = ArrayList<Pair<String,FloatArray>>()
 
     private val maskDetectionModel = MaskDetectionModel( context )
+    private var t1 : Long = 0L
 
     // <-------------- User controls --------------------------->
 
@@ -113,6 +114,7 @@ class FrameAnalyser( private var context: Context ,
 
     private suspend fun runModel( faces : List<Face> , cameraFrameBitmap : Bitmap ){
         withContext( Dispatchers.Default ) {
+            t1 = System.currentTimeMillis()
             val predictions = ArrayList<Prediction>()
             for (face in faces) {
                 try {
@@ -209,6 +211,7 @@ class FrameAnalyser( private var context: Context ,
                     Log.e( "Model" , "Exception in FrameAnalyser : ${e.message}" )
                     continue
                 }
+                Log.e( "Performance" , "Inference time -> ${System.currentTimeMillis() - t1}")
             }
             withContext( Dispatchers.Main ) {
                 // Clear the BoundingBoxOverlay and set the new results ( boxes ) to be displayed.
