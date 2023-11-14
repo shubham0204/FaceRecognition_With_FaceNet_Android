@@ -6,7 +6,7 @@
 > **Store images of people who you would like to recognize and the app, using these images, will classify those people. 
 We don't need to modify the app/retrain any ML model to add more people ( subjects ) for classification**  
 
-![repo_banner](images/banner.png)
+![banner](https://github.com/shubham0204/FaceRecognition_With_FaceNet_Android/assets/41076823/5922415d-ff61-4276-9817-7e472ebac7c4)
 
 *Message from the developer,*
 
