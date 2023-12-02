@@ -16,11 +16,15 @@ package com.ml.quaterion.facenetdetection
 
 import android.content.ContentResolver
 import android.content.Context
-import android.graphics.*
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.graphics.ImageFormat
+import android.graphics.Matrix
+import android.graphics.Rect
+import android.graphics.YuvImage
 import android.media.Image
 import android.net.Uri
 import android.os.ParcelFileDescriptor
-import android.util.Log
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.ByteArrayOutputStream
@@ -35,18 +39,7 @@ class BitmapUtils {
 
         // Crop the given bitmap with the given rect.
         fun cropRectFromBitmap(source: Bitmap, rect: Rect ): Bitmap {
-            var width = rect.width()
-            var height = rect.height()
-            if ( (rect.left + width) > source.width ){
-                width = source.width - rect.left
-            }
-            if ( (rect.top + height ) > source.height ){
-                height = source.height - rect.top
-            }
-            val croppedBitmap = Bitmap.createBitmap( source , rect.left , rect.top , width , height )
-            // Uncomment the below line if you want to save the input image.
-            // BitmapUtils.saveBitmap( context , croppedBitmap , "source" )
-            return croppedBitmap
+            return Bitmap.createBitmap( source , rect.left , rect.top , rect.width() , rect.height() )
         }
 
 

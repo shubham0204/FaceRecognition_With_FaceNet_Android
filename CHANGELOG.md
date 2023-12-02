@@ -1,3 +1,8 @@
-- Added inference time logging under `Performance` tag
-- Added new project banner
-- Updated `README.md`
+- Migrated from XML to Jetpack Compose
+- Face detection pipeline now works natively in C++. See `src/main/cpp/src/face_detector.cpp`.
+- Simplified `MainActivity.kt`
+- `FileReader` now supports parsing images in parallel with coroutines
+- New UI theme and polished Material3 interfaces
+- Removed `android.jetifier` from `gradle.properties`
+- Added new `ConfigureScreen` to change app configurations
+- Updated `LICENSE` to Apache to GNU GPL

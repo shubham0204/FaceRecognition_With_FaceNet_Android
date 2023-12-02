@@ -14,6 +14,6 @@
  */
 package com.ml.quaterion.facenetdetection
 
-import android.graphics.Rect
+import android.graphics.RectF
 
-data class Prediction( var bbox : Rect, var label : String , var maskLabel : String = "" )
+data class Prediction( var bbox : RectF, var label : String , var maskLabel : String = "" )
