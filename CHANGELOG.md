@@ -1,8 +1,5 @@
-- Migrated from XML to Jetpack Compose
-- Face detection pipeline now works natively in C++. See `src/main/cpp/src/face_detector.cpp`.
-- Simplified `MainActivity.kt`
-- `FileReader` now supports parsing images in parallel with coroutines
-- New UI theme and polished Material3 interfaces
-- Removed `android.jetifier` from `gradle.properties`
-- Added new `ConfigureScreen` to change app configurations
-- Updated `LICENSE` to Apache to GNU GPL
+- Removed `int8` quantized models
+- `validateRect` added to `BitmapUtils`
+- Added logic to change camera facing at runtime in `FaceDetectionOverlay`
+- `runBlocking` in `FileReader.run` now uses `Dispatchers.Default`
+- Added button in `MainActivity` to change camera facing, and `update` block in `AndroidView` for updating camera facing in `FaceDetectionOverlay`

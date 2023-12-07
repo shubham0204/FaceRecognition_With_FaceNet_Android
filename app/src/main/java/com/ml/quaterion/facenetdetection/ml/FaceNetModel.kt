@@ -31,16 +31,16 @@ import org.tensorflow.lite.support.tensorbuffer.TensorBuffer
 import java.nio.ByteBuffer
 
 // Utility class for FaceNet model
-class FaceNetModel( context : Context ,
-                    var model : ModelInfo ,
-                    useGpu : Boolean ,
-                    useXNNPack : Boolean) {
+class FaceNetModel(context : Context,
+                   private var model : ModelInfo,
+                   useGpu : Boolean,
+                   useXNNPack : Boolean) {
 
     // Input image size for FaceNet model.
     private val imgSize = model.inputDims
 
     // Output embedding size
-    val embeddingDim = model.outputDims
+    private val embeddingDim = model.outputDims
     private val faceNetModelOutputs = Array( 1 ){ FloatArray( embeddingDim ) }
 
     private var interpreter : Interpreter
@@ -82,20 +82,6 @@ class FaceNetModel( context : Context ,
         return runFaceNet( convertBitmapToBuffer( image ))[0]
     }
 
-    /*
-    fun getFaceEmbeddingV2( image: Bitmap ) : FloatArray {
-        val resizedImage = Bitmap.createScaledBitmap( image , this.imgSize , this.imgSize , true )
-        val resizedImageBytes = IntBuffer.allocate( this.imgSize * this.imgSize * 3 )
-        resizedImage.copyPixelsToBuffer( resizedImageBytes )
-        val pixels = IntArray( this.imgSize * this.imgSize * 3 )
-        resizedImageBytes.get( pixels )
-        for( i in pixels.indices){
-            pixels[ i ] =
-        }
-        resizedImageBytes.put( this.standardize( pixels ) )
-    }*/
-
-
     // Run the FaceNet model.
     private fun runFaceNet(inputs: Any): Array<FloatArray> {
         val t1 = System.currentTimeMillis()
@@ -109,6 +95,7 @@ class FaceNetModel( context : Context ,
     private fun convertBitmapToBuffer( image : Bitmap ) : ByteBuffer {
         return imageTensorProcessor.process( TensorImage.fromBitmap( image ) ).buffer
     }
+
 
     // Op to perform standardization
     // x' = ( x - mean ) / std_dev

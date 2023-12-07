@@ -32,8 +32,8 @@ import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.annotation.OptIn
+import androidx.camera.core.CameraSelector
 import androidx.camera.core.ExperimentalGetImage
-import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -44,7 +44,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Cameraswitch
 import androidx.compose.material.icons.filled.Videocam
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -58,6 +58,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -87,13 +88,6 @@ import java.io.FileOutputStream
 import java.io.ObjectInputStream
 import java.io.ObjectOutputStream
 
-/**
- *
- * Issues:
- *
- */
-
-
 class MainActivity : ComponentActivity() {
 
     private var isSerializedDataStored = false
@@ -109,7 +103,7 @@ class MainActivity : ComponentActivity() {
     private lateinit var sharedPreferences: SharedPreferences
 
     private val cameraPermissionStatus = mutableStateOf( false )
-
+    private val cameraFacing = mutableIntStateOf( CameraSelector.LENS_FACING_BACK )
     private val alertDialogShowStatus = mutableStateOf( false )
     private val alertDialogObjectParams = object {
         var title = ""
@@ -196,16 +190,31 @@ class MainActivity : ComponentActivity() {
     private fun Buttons( onNavigateToConfigureScreen: (() -> Unit) ) {
         val isDetectingFaces by appViewModel.isDetectingFaces.observeAsState()
         Row {
+            /*
             Button(onClick = { onNavigateToConfigureScreen() }) {
                 Icon(imageVector = Icons.Default.Settings, contentDescription = "Configure")
                 Text(text = "Configure")
-            }
+            }*/
             Button(
                 onClick = { onStartDetectionClick() } ,
                 colors = ButtonDefaults.buttonColors( containerColor = if( isDetectingFaces == true ) { Color.Red } else { MaterialTheme.colorScheme.primaryContainer } )
             ) {
                 Icon(imageVector = Icons.Default.Videocam, contentDescription = "Start Detection")
                 Text(text = "Start Detection")
+            }
+            Button(
+                onClick = {
+                    if( cameraFacing.value == CameraSelector.LENS_FACING_BACK ) {
+                        cameraFacing.value = CameraSelector.LENS_FACING_FRONT
+                    }
+                    else {
+                        cameraFacing.value = CameraSelector.LENS_FACING_BACK
+                    }
+                } ,
+                colors = ButtonDefaults.buttonColors( containerColor = if( cameraFacing.value == CameraSelector.LENS_FACING_FRONT ) { Color.Red } else { MaterialTheme.colorScheme.primaryContainer } )
+            ) {
+                Icon(imageVector = Icons.Default.Cameraswitch, contentDescription = "Switch Camera")
+                Text(text = "Switch Camera" )
             }
         }
     }
@@ -218,7 +227,7 @@ class MainActivity : ComponentActivity() {
             Logger.log( "No serialized data was found. Select the images directory.")
             createAlertDialog(
                 "Select Images Directory" ,
-                "As mentioned in the project\\'s README file, please select a directory which contains the images." ,
+                "As mentioned in the project\'s README file, please select a directory which contains the images." ,
                 "SELECT" ,
                 "CANCEL" ,
                 onPositiveButtonClick = {
@@ -242,8 +251,6 @@ class MainActivity : ComponentActivity() {
                 }
             )
         }
-
-        appViewModel.isDetectingFaces.value = true
     }
 
     private fun startDetectionWithStoredData() {
@@ -321,7 +328,7 @@ class MainActivity : ComponentActivity() {
                     t1 = System.currentTimeMillis()
                     appViewModel.updateProgressOverlay( "Reading images from selected directory ..." )
                     Log.e( "APP" , "len images ${images.size}")
-                    fileReader.run( images ) { it ->
+                    fileReader.run( images ) {
                         for( d in it.embeddedFaces ){
                             Log.e( "APP" , d.first + " " + d.second.contentToString())
                         }
@@ -355,6 +362,7 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+        appViewModel.isDetectingFaces.value = true
     }
 
     private suspend fun mainThread(block: (() -> Unit) ) {
@@ -419,21 +427,21 @@ class MainActivity : ComponentActivity() {
     @OptIn(ExperimentalGetImage::class) @Composable
     private fun Camera() {
         val cameraPermissionStatus by remember{ cameraPermissionStatus }
+        val cameraFacing by remember{ cameraFacing }
         val lifecycleOwner = LocalLifecycleOwner.current
         val context = LocalContext.current
-        val cameraProviderFuture = remember{ ProcessCameraProvider.getInstance( context ) }
         DelayedVisibility( cameraPermissionStatus ) {
-            // DrawingOverlay()
-            // CameraPreview()
             AndroidView(
                 modifier = Modifier.fillMaxSize() ,
                 factory = {
                     FaceDetectionOverlay(
                         lifecycleOwner ,
-                        cameraProviderFuture ,
                         context ,
                         appViewModel
                     )
+                } ,
+                update = {
+                    it.initializeCamera( cameraFacing )
                 }
             )
         }
@@ -530,7 +538,9 @@ class MainActivity : ComponentActivity() {
     }
 
 
-    private fun saveSerializedImageData(data : List<Pair<String,FloatArray>> ) {
+    private fun saveSerializedImageData(
+        data : List<Pair<String,FloatArray>>
+    ) {
         val serializedDataFile = File( filesDir , SERIALIZED_DATA_FILENAME )
         ObjectOutputStream( FileOutputStream( serializedDataFile )  ).apply {
             writeObject( data )

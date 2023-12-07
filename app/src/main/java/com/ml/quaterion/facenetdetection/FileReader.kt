@@ -35,13 +35,9 @@ class FileReader( private var faceNetModel: FaceNetModel ) {
         .setPerformanceMode( FaceDetectorOptions.PERFORMANCE_MODE_FAST )
         .build()
     private val detector = FaceDetection.getClient( realTimeOpts )
-    private var numImagesWithNoFaces = 0
 
-    // imageData will be provided to the MainActivity via ProcessCallback ( see the run() method below ) and finally,
-    // used by the FrameAnalyser class.
     private val imageData = Collections.synchronizedList( ArrayList<Pair<String,FloatArray>>() )
-
-    private val nWithNoFaces = AtomicInteger( 0 )
+    private val numImagesWithNoFaces = AtomicInteger( 0 )
 
     data class FileReaderResult(
         val embeddedFaces: List<Pair<String,FloatArray>> ,
@@ -53,7 +49,7 @@ class FileReader( private var faceNetModel: FaceNetModel ) {
         onResult: ((FileReaderResult) -> Unit)
     ) {
         // Block until all jobs are completed
-        runBlocking {
+        runBlocking( Dispatchers.Default ) {
             val mid = data.size / 2 ;
             listOf(
                 launch( Dispatchers.Default ) {
@@ -72,7 +68,7 @@ class FileReader( private var faceNetModel: FaceNetModel ) {
                 }
             ).joinAll()
             Log.e( "COROUTINES" , "results shown now " + imageData.size )
-            onResult( FileReaderResult( imageData , numImagesWithNoFaces ) )
+            onResult( FileReaderResult( imageData , numImagesWithNoFaces.get() ) )
         }
     }
 
@@ -83,7 +79,7 @@ class FileReader( private var faceNetModel: FaceNetModel ) {
         val inputImage = InputImage.fromBitmap( image , 0 )
         Log.e( "COROUTINES" , "Processing ->  $name" )
         val faces = Tasks.await( detector.process( inputImage ) )
-        if ( faces.size != 0 ) {
+        if ( faces.size != 0 && BitmapUtils.validateRect( image , faces[0].boundingBox ) ) {
             val embedding = faceNetModel.getFaceEmbedding(
                 BitmapUtils.cropRectFromBitmap( image, faces[0].boundingBox ) )
             Log.e( "COROUTINES" , "Added to list ->  $name" )
@@ -91,7 +87,7 @@ class FileReader( private var faceNetModel: FaceNetModel ) {
         }
         else {
             Log.e( "COROUTINES" , "No faces -> $name" )
-            nWithNoFaces.incrementAndGet()
+            numImagesWithNoFaces.incrementAndGet()
         }
     }
 

@@ -9,7 +9,6 @@ import kotlinx.coroutines.withContext
 
 class AppViewModel: ViewModel() {
 
-
     var isDetectingFaces = MutableLiveData( false )
 
     var model = MutableLiveData<FaceNetModel>()
