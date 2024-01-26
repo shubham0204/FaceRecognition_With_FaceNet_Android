@@ -7,7 +7,7 @@ import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Matrix
 import android.graphics.Paint
-import android.util.Log
+import android.graphics.RectF
 import android.view.SurfaceHolder
 import android.view.SurfaceView
 import android.widget.FrameLayout
@@ -106,7 +106,6 @@ class FaceDetectionOverlay(
             )
         }, executor )
         if ( childCount == 2 ){
-            Log.e( "APP" , "Old views removed" )
             removeView( this.previewView )
             removeView( this.boundingBoxOverlay )
         }
@@ -134,15 +133,12 @@ class FaceDetectionOverlay(
         var frameBitmap = Bitmap.createBitmap( image.image!!.width , image.image!!.height , Bitmap.Config.ARGB_8888 )
         frameBitmap.copyPixelsFromBuffer( image.planes[0].buffer )
 
-        println( "Image rotation => " + image.imageInfo.rotationDegrees.toFloat() )
-        Log.e( "APP" , "Child count is: $childCount")
         // Configure frameHeight and frameWidth for output2overlay transformation matrix.
         if( !isImageTransformedInitialized ) {
             imageTransform = Matrix()
             imageTransform.apply {
                 postRotate( image.imageInfo.rotationDegrees.toFloat() )
                 if( cameraFacing == CameraSelector.LENS_FACING_FRONT ) {
-                    Log.e("APP" , "Scaling..." )
                     postScale( -1f , 1f , image.width.toFloat() , image.height.toFloat() )
                 }
             }
@@ -166,7 +162,7 @@ class FaceDetectionOverlay(
         }
 
         val inputImage = InputImage.fromBitmap( frameBitmap , 0 )
-        Log.e( "APP" , "frames received" )
+
         detector.process( inputImage )
             .addOnSuccessListener { faces ->
                 CoroutineScope( Dispatchers.Default ).launch {
@@ -193,10 +189,10 @@ class FaceDetectionOverlay(
             val predictions = ArrayList<Prediction>()
             faces.filter{ BitmapUtils.validateRect( cameraFrameBitmap , it.boundingBox ) }
                  .forEach {
-                Log.e( "APP" , "Faces detected..." )
+
                 val croppedBitmap = BitmapUtils.cropRectFromBitmap( cameraFrameBitmap , it.boundingBox )
                 val label = appViewModel.annotator.value!!.run( appViewModel.model.value!!.getFaceEmbedding( croppedBitmap ) )
-                Logger.log( "Person identified as $label" )
+
                 val box = it.boundingBox.toRectF()
                 boundingBoxTransform.mapRect( box )
                 predictions.add(
@@ -205,7 +201,7 @@ class FaceDetectionOverlay(
                         label ,
                     )
                 )
-                Log.e( "Performance" , "Inference time -> ${System.currentTimeMillis() - t1}")
+
             }
             withContext( Dispatchers.Main ) {
                 this@FaceDetectionOverlay.predictions = predictions.toTypedArray()
@@ -222,7 +218,6 @@ class FaceDetectionOverlay(
         faces: List<Face>
     ) {
         withContext( Dispatchers.Default ) {
-            Log.e( "APP" , "Detecting faces directly..." )
             val predictions = ArrayList<Prediction>()
             faces.forEach {
                 val box = it.boundingBox.toRectF()
@@ -248,7 +243,11 @@ class FaceDetectionOverlay(
         fps = ( numFrames / ((System.currentTimeMillis() - timeInit) / 1000)).toInt()
     }
 
-
+    data class Prediction(
+        var bbox : RectF,
+        var label : String,
+        var maskLabel : String = ""
+    )
 
     inner class BoundingBoxOverlay( context: Context )
         : SurfaceView( context ) , SurfaceHolder.Callback {
@@ -273,10 +272,7 @@ class FaceDetectionOverlay(
         }
 
         override fun onDraw(canvas: Canvas) {
-            Log.e( "APP" , "Drawing on view............" )
             predictions.forEach {
-                Log.e("APP" , "Boxes $it" )
-                Log.e( "APP" , "Drew faces on view............" )
                 canvas.drawRoundRect(it.bbox, 16f, 16f, boxPaint)
                 canvas.drawText(
                     it.label,

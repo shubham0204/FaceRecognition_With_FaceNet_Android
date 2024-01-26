@@ -2,8 +2,6 @@ package com.ml.shubham0204.facenetdetection.ml
 
 import android.content.Context
 import android.graphics.Bitmap
-import android.util.Log
-import com.ml.shubham0204.facenetdetection.Logger
 import org.tensorflow.lite.DataType
 import org.tensorflow.lite.Interpreter
 import org.tensorflow.lite.gpu.CompatibilityList
@@ -18,7 +16,7 @@ import java.nio.ByteBuffer
 
 // Utility class for FaceNet model
 class FaceNetModel(context : Context,
-                   private var model : ModelInfo,
+                   model : ModelInfo,
                    useGpu : Boolean,
                    useXNNPack : Boolean) {
 
@@ -59,7 +57,6 @@ class FaceNetModel(context : Context,
             useNNAPI = true
         }
         interpreter = Interpreter(FileUtil.loadMappedFile(context, model.assetsFilename ) , interpreterOptions )
-        Logger.log("Using ${model.name} model.")
     }
 
 
@@ -72,7 +69,6 @@ class FaceNetModel(context : Context,
     private fun runFaceNet(inputs: Any): Array<FloatArray> {
         val t1 = System.currentTimeMillis()
         interpreter.run( inputs, faceNetModelOutputs )
-        Log.i( "Performance" , "${model.name} Inference Speed in ms : ${System.currentTimeMillis() - t1}")
         return faceNetModelOutputs
     }
 

@@ -6,11 +6,9 @@ import android.content.Intent
 import android.content.SharedPreferences
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
-import androidx.exifinterface.media.ExifInterface
 import android.net.Uri
 import android.os.Bundle
 import android.provider.DocumentsContract
-import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.ActivityResultLauncher
@@ -54,14 +52,10 @@ import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.app.ActivityCompat
 import androidx.documentfile.provider.DocumentFile
-import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
-import androidx.navigation.compose.rememberNavController
 import com.ml.quaterion.facenetdetection.R
 import com.ml.shubham0204.facenetdetection.ml.Annotator
 import com.ml.shubham0204.facenetdetection.ml.FaceNetModel
 import com.ml.shubham0204.facenetdetection.ml.Models
-import com.ml.shubham0204.facenetdetection.ui.ConfigureScreen
 import com.ml.shubham0204.facenetdetection.ui.theme.AppTheme
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -115,9 +109,6 @@ class MainActivity : ComponentActivity() {
     // Use the model configs in Models.kt
     // Default is Models.FACENET ;
     private val modelInfo = Models.FACENET
-
-    // Camera Facing
-    private var t1: Long = 0L
 
     private lateinit var processDirBlock: ((Uri?) -> Unit)
 
@@ -199,7 +190,6 @@ class MainActivity : ComponentActivity() {
         sharedPreferences = getSharedPreferences( getString( R.string.app_name ) , Context.MODE_PRIVATE )
         isSerializedDataStored = sharedPreferences.getBoolean( sharedPreferenceIsDataStored , false )
         if ( !isSerializedDataStored ) {
-            Logger.log( "No serialized data was found. Select the images directory.")
             createAlertDialog(
                 "Select Images Directory" ,
                 "As mentioned in the project\'s README file, please select a directory which contains the images." ,
@@ -276,7 +266,7 @@ class MainActivity : ComponentActivity() {
                             val name = doc.name!!
                             for ( imageDocFile in doc.listFiles() ) {
                                 try {
-                                    images.add( Pair( name , getFixedBitmap( imageDocFile.uri ) ) )
+                                    images.add( Pair( name , BitmapUtils.getFixedBitmap( this@MainActivity , imageDocFile.uri ) ) )
                                 }
                                 catch ( e : Exception ) {
                                     errorFound = true
@@ -285,7 +275,6 @@ class MainActivity : ComponentActivity() {
                                     break
                                 }
                             }
-                            Logger.log( "Found ${doc.listFiles().size} images in $name directory" )
                         }
                         else {
                             errorFound = true
@@ -300,16 +289,9 @@ class MainActivity : ComponentActivity() {
                             "as described in the README of the project and then restart the app."
                 }
                 if ( !errorFound ) {
-                    t1 = System.currentTimeMillis()
                     appViewModel.updateProgressOverlay( "Reading images from selected directory ..." )
-                    Log.e( "APP" , "len images ${images.size}")
                     fileReader.run( images ) {
-                        for( d in it.embeddedFaces ){
-                            Log.e( "APP" , d.first + " " + d.second.contentToString())
-                        }
-                        Log.e("TIME" , "Time XYZ required: ${System.currentTimeMillis() - t1}")
                         saveSerializedImageData( it.embeddedFaces )
-                        Logger.log( "Images parsed. Found ${it.numImagesWithNoFaces} images with no faces." )
                         val annotator = Annotator()
                         annotator.initialize( it.embeddedFaces )
                         runBlocking( Dispatchers.Main ){
@@ -495,24 +477,6 @@ class MainActivity : ComponentActivity() {
         this.processDirBlock = onResult
         chooseDirectoryLauncher.launch( Intent( Intent.ACTION_OPEN_DOCUMENT_TREE ) )
     }
-
-
-    // Get the image as a Bitmap from given Uri and fix the rotation using the Exif interface
-    // Source -> https://stackoverflow.com/questions/14066038/why-does-an-image-captured-using-camera-intent-gets-rotated-on-some-devices-on-a
-    private fun getFixedBitmap( imageFileUri : Uri ) : Bitmap {
-        var imageBitmap = BitmapUtils.getBitmapFromUri( contentResolver , imageFileUri )
-        val exifInterface = ExifInterface( contentResolver.openInputStream( imageFileUri )!! )
-        imageBitmap =
-            when (exifInterface.getAttributeInt( ExifInterface.TAG_ORIENTATION ,
-                ExifInterface.ORIENTATION_UNDEFINED )) {
-                ExifInterface.ORIENTATION_ROTATE_90 -> BitmapUtils.rotateBitmap( imageBitmap , 90f )
-                ExifInterface.ORIENTATION_ROTATE_180 -> BitmapUtils.rotateBitmap( imageBitmap , 180f )
-                ExifInterface.ORIENTATION_ROTATE_270 -> BitmapUtils.rotateBitmap( imageBitmap , 270f )
-                else -> imageBitmap
-            }
-        return imageBitmap
-    }
-
 
     private fun saveSerializedImageData(
         data : List<Pair<String,FloatArray>>

@@ -8,6 +8,7 @@ import android.graphics.Matrix
 import android.graphics.Rect
 import android.net.Uri
 import android.os.ParcelFileDescriptor
+import androidx.exifinterface.media.ExifInterface
 import java.io.File
 import java.io.FileDescriptor
 import java.io.FileOutputStream
@@ -73,6 +74,24 @@ class BitmapUtils {
             image.compress(Bitmap.CompressFormat.PNG, 100, fileOutputStream)
         }
 
+
+        // Get the image as a Bitmap from given Uri and fix the rotation using the Exif interface
+        // Source -> https://stackoverflow.com/questions/14066038/why-does-an-image-captured-using-camera-intent-gets-rotated-on-some-devices-on-a
+        fun getFixedBitmap(
+            context: Context ,
+            imageFileUri : Uri ) : Bitmap {
+            var imageBitmap = getBitmapFromUri( context.contentResolver , imageFileUri )
+            val exifInterface = ExifInterface( context.contentResolver.openInputStream( imageFileUri )!! )
+            imageBitmap =
+                when (exifInterface.getAttributeInt( ExifInterface.TAG_ORIENTATION ,
+                    ExifInterface.ORIENTATION_UNDEFINED )) {
+                    ExifInterface.ORIENTATION_ROTATE_90 -> BitmapUtils.rotateBitmap( imageBitmap , 90f )
+                    ExifInterface.ORIENTATION_ROTATE_180 -> BitmapUtils.rotateBitmap( imageBitmap , 180f )
+                    ExifInterface.ORIENTATION_ROTATE_270 -> BitmapUtils.rotateBitmap( imageBitmap , 270f )
+                    else -> imageBitmap
+                }
+            return imageBitmap
+        }
 
     }
 

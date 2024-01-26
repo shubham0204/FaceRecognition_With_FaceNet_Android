@@ -1,7 +1,6 @@
 package com.ml.shubham0204.facenetdetection
 
 import android.graphics.Bitmap
-import android.util.Log
 import com.google.android.gms.tasks.Tasks
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.face.FaceDetection
@@ -53,7 +52,6 @@ class FileReader( private var faceNetModel: FaceNetModel ) {
                     }
                 }
             ).joinAll()
-            Log.e( "COROUTINES" , "results shown now " + imageData.size )
             onResult( FileReaderResult( imageData , numImagesWithNoFaces.get() ) )
         }
     }
@@ -63,16 +61,14 @@ class FileReader( private var faceNetModel: FaceNetModel ) {
     // Store the embedding in imageData
     private fun scanImage(name: String, image: Bitmap ) {
         val inputImage = InputImage.fromBitmap( image , 0 )
-        Log.e( "COROUTINES" , "Processing ->  $name" )
+
         val faces = Tasks.await( detector.process( inputImage ) )
         if ( faces.size != 0 && BitmapUtils.validateRect( image , faces[0].boundingBox ) ) {
             val embedding = faceNetModel.getFaceEmbedding(
                 BitmapUtils.cropRectFromBitmap( image, faces[0].boundingBox ) )
-            Log.e( "COROUTINES" , "Added to list ->  $name" )
             imageData.add(Pair(name, embedding))
         }
         else {
-            Log.e( "COROUTINES" , "No faces -> $name" )
             numImagesWithNoFaces.incrementAndGet()
         }
     }
