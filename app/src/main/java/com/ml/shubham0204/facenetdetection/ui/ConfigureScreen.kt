@@ -1,4 +1,4 @@
-package com.ml.quaterion.facenetdetection.ui
+package com.ml.shubham0204.facenetdetection.ui
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -17,6 +17,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -32,17 +33,19 @@ import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import com.ml.quaterion.facenetdetection.ml.ModelInfo
-import com.ml.quaterion.facenetdetection.ml.Models
+import com.ml.shubham0204.facenetdetection.ml.ModelInfo
+import com.ml.shubham0204.facenetdetection.ml.Models
 
 private val userPreferences = object {
     var faceDetectionModel: MutableState<ModelInfo> = mutableStateOf( Models.FACENET )
-    var distanceMetric: MutableState<Models.Companion.DistanceMetrics> = mutableStateOf( Models.Companion.DistanceMetrics.COSINE )
     var isWritingLogs: MutableState<Boolean> = mutableStateOf( false )
+    var nnApiEnabled: MutableState<Boolean> = mutableStateOf( true )
+    var gpuEnabled: MutableState<Boolean> = mutableStateOf( true )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -92,7 +95,6 @@ private fun ScreenUI( paddingValues: PaddingValues ) {
         PreferenceChooseModel()
         PreferenceWriteLogs()
         PreferenceChooseImagesDir()
-        PreferenceChooseDistanceMetric()
     }
 }
 
@@ -100,7 +102,7 @@ private fun ScreenUI( paddingValues: PaddingValues ) {
 private fun Preference(
     title: String ,
     description: String = "" ,
-    content: @Composable() ( ColumnScope.() -> Unit)
+    content: @Composable ( ColumnScope.() -> Unit)
 ) {
     Card(
         modifier = Modifier.fillMaxWidth() ,
@@ -143,6 +145,37 @@ private fun PreferenceChooseModel() {
 }
 
 @Composable
+private fun PreferenceDelegates() {
+    var nnApiEnabled by remember{ userPreferences.nnApiEnabled }
+    var gpuEnabled by remember{ userPreferences.gpuEnabled }
+    Preference(
+        title = "TensorFlow Lite Delegates" ,
+        description = "NNAPIDelegate and GPUDelegate"
+    ) {
+        Checkbox(
+            checked = nnApiEnabled,
+            onCheckedChange = {
+                nnApiEnabled = it
+            }
+        )
+        Column {
+            Text(text = "NN API")
+            Text(text = "Logging writes log in a text file" )
+        }
+        Checkbox(
+            checked = gpuEnabled,
+            onCheckedChange = {
+                gpuEnabled = it
+            }
+        )
+        Column {
+            Text(text = "GPU Delegate")
+            Text(text = "Logging writes log in a text file" )
+        }
+    }
+}
+
+@Composable
 private fun PreferenceWriteLogs() {
     val writeLogs by remember{ userPreferences.isWritingLogs }
     Preference(
@@ -177,33 +210,6 @@ private fun PreferenceChooseImagesDir() {
         description = "A directory which contains images"
     ) {
 
-    }
-}
-
-@Composable
-private fun PreferenceChooseDistanceMetric() {
-    val selectedPreference by remember{ userPreferences.distanceMetric }
-    Preference(
-        title = "Distance Metric" ,
-        description = "L2 Norm or Cosine Similarity"
-    ) {
-        Models.models.forEach {
-            Row(
-                verticalAlignment = Alignment.CenterVertically ,
-                modifier = Modifier
-                    .padding(16.dp)
-                    .fillMaxWidth()
-                    .clickable {
-                        userPreferences.faceDetectionModel.value = it
-                    },
-            ){
-                RadioButton(selected = it.name == selectedPreference.name , onClick = { /*TODO*/ })
-                Column {
-                    Text(text = it.name)
-                    Text(text = it.description)
-                }
-            }
-        }
     }
 }
 

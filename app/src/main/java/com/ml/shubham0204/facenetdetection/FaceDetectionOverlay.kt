@@ -1,4 +1,4 @@
-package com.ml.quaterion.facenetdetection
+package com.ml.shubham0204.facenetdetection
 
 import android.annotation.SuppressLint
 import android.content.Context
@@ -60,6 +60,9 @@ class FaceDetectionOverlay(
 
     var predictions : Array<Prediction> = arrayOf()
 
+    private var timeInit = System.currentTimeMillis()
+    private var numFrames = 0L
+    private var fps = 0
 
 
     init {
@@ -193,8 +196,6 @@ class FaceDetectionOverlay(
                 Log.e( "APP" , "Faces detected..." )
                 val croppedBitmap = BitmapUtils.cropRectFromBitmap( cameraFrameBitmap , it.boundingBox )
                 val label = appViewModel.annotator.value!!.run( appViewModel.model.value!!.getFaceEmbedding( croppedBitmap ) )
-                cameraFrameBitmap.recycle()
-                croppedBitmap.recycle()
                 Logger.log( "Person identified as $label" )
                 val box = it.boundingBox.toRectF()
                 boundingBoxTransform.mapRect( box )
@@ -209,6 +210,8 @@ class FaceDetectionOverlay(
             withContext( Dispatchers.Main ) {
                 this@FaceDetectionOverlay.predictions = predictions.toTypedArray()
                 boundingBoxOverlay.invalidate()
+                numFrames += 1
+                updateFPS()
                 isProcessing = false
             }
         }
@@ -234,10 +237,17 @@ class FaceDetectionOverlay(
             withContext( Dispatchers.Main ) {
                 this@FaceDetectionOverlay.predictions = predictions.toTypedArray()
                 boundingBoxOverlay.invalidate()
+                numFrames += 1
+                updateFPS()
                 isProcessing = false
             }
         }
     }
+
+    private fun updateFPS() {
+        fps = ( numFrames / ((System.currentTimeMillis() - timeInit) / 1000)).toInt()
+    }
+
 
 
     inner class BoundingBoxOverlay( context: Context )
@@ -275,6 +285,7 @@ class FaceDetectionOverlay(
                     textPaint
                 )
             }
+            canvas.drawText( fps.toString() , 100f , 200f , textPaint )
         }
 
     }

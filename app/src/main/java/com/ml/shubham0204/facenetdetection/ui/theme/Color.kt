@@ -1,4 +1,4 @@
-package com.ml.quaterion.facenetdetection.ui.theme
+package com.ml.shubham0204.facenetdetection.ui.theme
 
 import androidx.compose.ui.graphics.Color
 

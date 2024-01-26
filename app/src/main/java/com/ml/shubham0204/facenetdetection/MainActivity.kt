@@ -1,18 +1,4 @@
-/*
- * Copyright 2023 Shubham Panchal
- * Licensed under the Apache License, Version 2.0 (the "License");
- * You may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-package com.ml.quaterion.facenetdetection
+package com.ml.shubham0204.facenetdetection
 
 import android.Manifest
 import android.content.Context
@@ -20,12 +6,11 @@ import android.content.Intent
 import android.content.SharedPreferences
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
-import android.media.ExifInterface
+import androidx.exifinterface.media.ExifInterface
 import android.net.Uri
 import android.os.Bundle
 import android.provider.DocumentsContract
 import android.util.Log
-import android.widget.TextView
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.ActivityResultLauncher
@@ -72,11 +57,12 @@ import androidx.documentfile.provider.DocumentFile
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.ml.quaterion.facenetdetection.ml.Annotator
-import com.ml.quaterion.facenetdetection.ml.FaceNetModel
-import com.ml.quaterion.facenetdetection.ml.Models
-import com.ml.quaterion.facenetdetection.ui.ConfigureScreen
-import com.ml.quaterion.facenetdetection.ui.theme.AppTheme
+import com.ml.quaterion.facenetdetection.R
+import com.ml.shubham0204.facenetdetection.ml.Annotator
+import com.ml.shubham0204.facenetdetection.ml.FaceNetModel
+import com.ml.shubham0204.facenetdetection.ml.Models
+import com.ml.shubham0204.facenetdetection.ui.ConfigureScreen
+import com.ml.shubham0204.facenetdetection.ui.theme.AppTheme
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -93,10 +79,10 @@ class MainActivity : ComponentActivity() {
     private var isSerializedDataStored = false
 
     // Serialized data will be stored ( in app's private storage ) with this filename.
-    private val SERIALIZED_DATA_FILENAME = "image_data"
+    private val serializedDataFilename = "image_data"
 
     // Shared Pref key to check if the data was stored.
-    private val SHARED_PREF_IS_DATA_STORED_KEY = "is_data_stored"
+    private val sharedPreferenceIsDataStored = "is_data_stored"
 
     private val appViewModel by viewModels<AppViewModel>()
     private lateinit var fileReader : FileReader
@@ -127,7 +113,7 @@ class MainActivity : ComponentActivity() {
 
     // You may the change the models here.
     // Use the model configs in Models.kt
-    // Default is Models.FACENET ; Quantized models are faster
+    // Default is Models.FACENET ;
     private val modelInfo = Models.FACENET
 
     // Camera Facing
@@ -135,24 +121,13 @@ class MainActivity : ComponentActivity() {
 
     private lateinit var processDirBlock: ((Uri?) -> Unit)
 
-    companion object {
-
-        lateinit var logTextView : TextView
-
-        fun setMessage( message : String ) {
-            logTextView.text = message
-        }
-
-    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         setContent {
-            val navController = rememberNavController()
-            NavHost(navController = navController, startDestination = "main") {
-                composable( "main" ) { ActivityUI { navController.navigate("configure") } }
-                composable( "configure" ) { ConfigureScreen{ navController.popBackStack() } }
+            ActivityUI {
+
             }
         }
 
@@ -204,14 +179,14 @@ class MainActivity : ComponentActivity() {
             }
             Button(
                 onClick = {
-                    if( cameraFacing.value == CameraSelector.LENS_FACING_BACK ) {
-                        cameraFacing.value = CameraSelector.LENS_FACING_FRONT
+                    if( cameraFacing.intValue == CameraSelector.LENS_FACING_BACK ) {
+                        cameraFacing.intValue = CameraSelector.LENS_FACING_FRONT
                     }
                     else {
-                        cameraFacing.value = CameraSelector.LENS_FACING_BACK
+                        cameraFacing.intValue = CameraSelector.LENS_FACING_BACK
                     }
                 } ,
-                colors = ButtonDefaults.buttonColors( containerColor = if( cameraFacing.value == CameraSelector.LENS_FACING_FRONT ) { Color.Red } else { MaterialTheme.colorScheme.primaryContainer } )
+                colors = ButtonDefaults.buttonColors( containerColor = if( cameraFacing.intValue == CameraSelector.LENS_FACING_FRONT ) { Color.Red } else { MaterialTheme.colorScheme.primaryContainer } )
             ) {
                 Icon(imageVector = Icons.Default.Cameraswitch, contentDescription = "Switch Camera")
                 Text(text = "Switch Camera" )
@@ -222,7 +197,7 @@ class MainActivity : ComponentActivity() {
 
     private val onStartDetectionClick: ( () -> Unit ) = {
         sharedPreferences = getSharedPreferences( getString( R.string.app_name ) , Context.MODE_PRIVATE )
-        isSerializedDataStored = sharedPreferences.getBoolean( SHARED_PREF_IS_DATA_STORED_KEY , false )
+        isSerializedDataStored = sharedPreferences.getBoolean( sharedPreferenceIsDataStored , false )
         if ( !isSerializedDataStored ) {
             Logger.log( "No serialized data was found. Select the images directory.")
             createAlertDialog(
@@ -261,7 +236,7 @@ class MainActivity : ComponentActivity() {
             fileReader = FileReader( faceNetModel )
             appViewModel.updateProgressOverlay( "\uD83D\uDDB4 Loading face data ..." )
             ioThread {
-                val serializedDataFile = File( filesDir , SERIALIZED_DATA_FILENAME )
+                val serializedDataFile = File( filesDir , serializedDataFilename )
                 val objectInputStream = ObjectInputStream( FileInputStream( serializedDataFile ) )
                 val faceList = objectInputStream.readObject() as ArrayList<Pair<String,FloatArray>>
                 val annotator = Annotator()
@@ -424,7 +399,8 @@ class MainActivity : ComponentActivity() {
 
 
 
-    @OptIn(ExperimentalGetImage::class) @Composable
+    @OptIn(ExperimentalGetImage::class)
+    @Composable
     private fun Camera() {
         val cameraPermissionStatus by remember{ cameraPermissionStatus }
         val cameraFacing by remember{ cameraFacing }
@@ -541,13 +517,13 @@ class MainActivity : ComponentActivity() {
     private fun saveSerializedImageData(
         data : List<Pair<String,FloatArray>>
     ) {
-        val serializedDataFile = File( filesDir , SERIALIZED_DATA_FILENAME )
+        val serializedDataFile = File( filesDir , serializedDataFilename )
         ObjectOutputStream( FileOutputStream( serializedDataFile )  ).apply {
             writeObject( data )
             flush()
             close()
         }
-        sharedPreferences.edit().putBoolean( SHARED_PREF_IS_DATA_STORED_KEY , true ).apply()
+        sharedPreferences.edit().putBoolean( sharedPreferenceIsDataStored , true ).apply()
     }
 
 

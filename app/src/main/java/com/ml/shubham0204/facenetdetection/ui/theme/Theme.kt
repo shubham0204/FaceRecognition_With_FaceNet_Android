@@ -1,4 +1,4 @@
-package com.ml.quaterion.facenetdetection.ui.theme
+package com.ml.shubham0204.facenetdetection.ui.theme
 
 import android.app.Activity
 import android.os.Build

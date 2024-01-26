@@ -1,18 +1,4 @@
-/*
- * Copyright 2023 Shubham Panchal
- * Licensed under the Apache License, Version 2.0 (the "License");
- * You may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-package com.ml.quaterion.facenetdetection
+package com.ml.shubham0204.facenetdetection
 
 import android.graphics.Bitmap
 import android.util.Log
@@ -20,7 +6,7 @@ import com.google.android.gms.tasks.Tasks
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.face.FaceDetection
 import com.google.mlkit.vision.face.FaceDetectorOptions
-import com.ml.quaterion.facenetdetection.ml.FaceNetModel
+import com.ml.shubham0204.facenetdetection.ml.FaceNetModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
@@ -50,7 +36,7 @@ class FileReader( private var faceNetModel: FaceNetModel ) {
     ) {
         // Block until all jobs are completed
         runBlocking( Dispatchers.Default ) {
-            val mid = data.size / 2 ;
+            val mid = data.size / 2
             listOf(
                 launch( Dispatchers.Default ) {
                     data.subList( 0 , mid ).forEach {

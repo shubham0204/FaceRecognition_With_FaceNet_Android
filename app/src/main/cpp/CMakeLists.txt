@@ -4,6 +4,7 @@ project( "facedetector" )
 add_library(
         ${CMAKE_PROJECT_NAME}
         SHARED
+        src/lib.cpp
         src/face_detector.cpp)
 
 target_link_libraries(

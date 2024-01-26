@@ -1,9 +1,9 @@
-package com.ml.quaterion.facenetdetection
+package com.ml.shubham0204.facenetdetection
 
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
-import com.ml.quaterion.facenetdetection.ml.Annotator
-import com.ml.quaterion.facenetdetection.ml.FaceNetModel
+import com.ml.shubham0204.facenetdetection.ml.Annotator
+import com.ml.shubham0204.facenetdetection.ml.FaceNetModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 

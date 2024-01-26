@@ -1,46 +1,29 @@
 
-<div align="center">
-  <h1>Face Recognition and Classification With FaceNet On Android</h1>
-</div>
-
-> **Store images of people who you would like to recognize and the app, using these images, will classify those people. 
-We don't need to modify the app/retrain any ML model to add more people ( subjects ) for classification**  
-
 ![banner](https://github.com/shubham0204/FaceRecognition_With_FaceNet_Android/assets/41076823/5922415d-ff61-4276-9817-7e472ebac7c4)
 
-*Message from the developer,*
+# Face Recognition with FaceNet In Android
 
- > You may also like my latest project -> [**Age + Gender Estimation in Android with TensorFlow**](https://github.com/shubham0204/Age-Gender_Estimation_TF-Android). 
- > I'm open for **freelancing** in **Android + ML projects** as well as **Technical Blogging**. You may send me an email/message on [**Google Chat**](https://mail.google.com/chat) at **equipintelligence@gmail.com**.
- 
+> A simple, efficient face detection app that allows us to add images of multiple persons in the device's internal storage, and recognize them in real-time through the camera-feed
  
 ### Features
 
-* Asynchronous processing with [Kotlin Coroutines](https://developer.android.com/kotlin/coroutines)
-* Quick labelling of faces with C++ computation (See [`native`](https://github.com/shubham0204/FaceRecognition_With_FaceNet_Android/tree/native) branch)
-* Use of latest Android development practices with configurable camera facing, GPU usage and mask detection.
+* Reusable `FaceNet.kt` module that can easily used in other projects
+* The app's design is simple and efficient, with focus of code readability and beginner-friendliness
+* Face detection pipeline built in C++ for faster performance 
+* Use of CameraX for configuring preview
+* Using Jetpack Compose for UI 
 
----
+
 ![Working of the app](images/app_1.gif)
 
-If you're ML developer, you might have heard about FaceNet, Google's state-of-the-art model for generating face embeddings. In this   
-project, we'll use the FaceNet model on Android and generate embeddings ( fixed size vectors ) which hold information of the face.  
-  
-> The accuracy of the face detection system ( with FaceNet ) may not have a considerable accuracy. Make sure you explore other options as well while considering your app's production.  
-  
-## FaceNet
 
-![Working of the FaceNet model](images/fig_1.png)
 
-So, the aim of the FaceNet model is to generate a 128 dimensional vector of a given face. It takes in an 160 * 160 RGB image and   
-outputs an array with 128 elements. How is it going to help us in our face recognition project?   
-Well, the FaceNet model generates similar face vectors for similar faces. Here, by the term "similar", we mean   
-the vectors which point out in the same direction.
-In this app, we'll generate two such vectors and use a suitable metric to compare them ( either L2norm or cosine similarity ). 
-The one which is the closest will form our desired output.  
-  
-You can download the FaceNet Keras `.h5` file from this [repo](https://github.com/nyoki-mtl/keras-facenet) and TFLite model 
-from the [`assets`](https://github.com/shubham0204/FaceRecognition_With_FaceNet_Android/tree/master/app/src/main/assets) folder.
+Given a cropped image of a human face, the FaceNet model produces a vector or a list of 128 elements termed as an *embedding*. The *embedding* is a compact representation of the human face given to it, and this vector when compared with the another vector, generated from some other face, can be used to determine if the two faces are of the same person. The FaceNet has been trained in manner which enables it to produce *similar* vectors for faces which belong to the same person. 
+
+The task of identifying a person is reduced to comparing *face vectors* i.e. embeddings generated from the FaceNet model, using a suitable metric. In this project, we use the L2-norm and the cosine similarity. 
+
+
+
   
 ## Usage
 
@@ -70,9 +53,7 @@ the names of sub directories within `images`. For every image, collect bounding 
 2. Finally, we have a list of cropped `Bitmap` of the faces present in the images. Next, feed the cropped `Bitmap` to the FaceNet   
 model and get the embeddings ( as `FloatArray` ). Now, we create a `HashMap<String,FloatArray>` object where we store the names of   
 the sub directories as keys and the embeddings as their corresponding values. 
-   
-See [`MainActivity.kt`](https://github.com/shubham0204/FaceRecognition_With_FaceNet_Android/blob/master/app/src/main/java/com/ml/quaterion/facenetdetection/MainActivity.kt) and [`FileReader.kt`](https://github.com/shubham0204/FaceRecognition_With_FaceNet_Android/blob/master/app/src/main/java/com/ml/quaterion/facenetdetection/FileReader.kt) for the code.
-  
+
 The above procedure is carried out only on the app's startup. The steps below will execute on each camera frame.  
   
 1. Using `androidx.camera.core.ImageAnalysis`, we construct a `FrameAnalyser` class which processes the camera frames. Now, for a   
@@ -101,12 +82,3 @@ See [`FaceNetModel.kt`](https://github.com/shubham0204/FaceRecognition_With_Face
   
 Predictions may go wrong as FaceNet does not always produce similar embeddings for the same person. 
 Consider the accuracy of the FaceNet model while using it in your apps. In that case, you may learn to use the `FaceNetModel` class separating for using FaceNet in some other tasks.  
-
-## Important Resources  
-
-- [FaceNet: A Unified Embedding for Face Recognition and Clustering](https://arxiv.org/abs/1503.03832)
-- [MLKit](https://developers.google.com/ml-kit/vision/face-detection) for face recognition.  
-- [TensorFlow Lite Android](https://www.tensorflow.org/lite)  
-- [TensorFlow Lite Android Support Library](https://github.com/tensorflow/tensorflow/tree/master/tensorflow/lite/experimental/support/java)  
-- [CameraX](https://developer.android.com/training/camerax)
-

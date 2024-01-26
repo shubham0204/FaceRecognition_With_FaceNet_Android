@@ -1,0 +1,82 @@
+[versions]
+agp = "8.2.0"
+org-jetbrains-kotlin-android = "1.9.20"
+
+camerax = "1.3.1"
+ktx = "1.12.0"
+lifecycle-runtime-ktx = "2.6.2"
+activity-compose = "1.8.2"
+navigation-compose = "2.7.6"
+
+# Jetpack Compose
+compose-bom = "2023.10.01"
+compose-fragment = "1.6.2"
+
+# DocumentFile and ExifInterface
+documentfile = "1.0.1"
+exifinterface = "1.3.7"
+
+# MLKit Face Detection
+face-detection = "16.1.5"
+
+# Kotlin Coroutines for Android
+kotlinx-coroutines = "1.7.3"
+
+# TensorFlow Lite
+tensorflow-lite = "2.11.0"
+tensorflow-lite-support = "0.4.2"
+
+androidx-test-ext-junit = "1.1.5"
+espresso-core = "3.5.1"
+
+
+
+
+[libraries]
+# CameraX
+androidx-camera-camera2 = { module = "androidx.camera:camera-camera2", version.ref = "camerax" }
+androidx-camera-lifecycle = { module = "androidx.camera:camera-lifecycle", version.ref = "camerax" }
+androidx-camera-view = { module = "androidx.camera:camera-view", version.ref = "camerax" }
+
+androidx-ktx = { module = "androidx.core:core-ktx" , version.ref = "ktx" }
+androidx-lifecycle = { module = "androidx.lifecycle:lifecycle-runtime-ktx" , version.ref = "lifecycle-runtime-ktx" }
+androidx-activity = { module = "androidx.activity:activity-compose" , version.ref = "activity-compose" }
+androidx-navigation-compose = { module = "androidx.navigation:navigation-compose", version.ref = "navigation-compose" }
+
+# Jetpack Compose
+compose-bom = { module = "androidx.compose:compose-bom" , version.ref = "compose-bom" }
+compose-ui = { module = "androidx.compose.ui:ui" }
+compose-ui-graphics = { module = "androidx.compose.ui:ui-graphics" }
+compose-ui-tooling-preview = { module = "androidx.compose.ui:ui-tooling-preview" }
+compose-material3 = { module = "androidx.compose.material3:material3" }
+compose-material3-icons-extended = { module = "androidx.compose.material:material-icons-extended" }
+compose-runtime-livedata = { module = "androidx.compose.runtime:runtime-livedata" }
+compose-fragment = { module = "androidx.fragment:fragment-ktx" , version.ref = "compose-fragment" }
+
+# DocumentFile and ExifInterface
+androidx-documentfile = { module = "androidx.documentfile:documentfile", version.ref = "documentfile" }
+androidx-exifinterface = { module = "androidx.exifinterface:exifinterface", version.ref = "exifinterface" }
+
+# MLKit Face Detection
+face-detection = { module = "com.google.mlkit:face-detection", version.ref = "face-detection" }
+
+# Kotlin Coroutines for Android
+kotlinx-coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android", version.ref = "kotlinx-coroutines" }
+kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "kotlinx-coroutines" }
+
+# TensorFlow Lite
+tensorflow-lite = { module = "org.tensorflow:tensorflow-lite", version.ref = "tensorflow-lite" }
+tensorflow-lite-gpu = { module = "org.tensorflow:tensorflow-lite-gpu", version.ref = "tensorflow-lite" }
+tensorflow-lite-gpu-api = { module = "org.tensorflow:tensorflow-lite-gpu-api", version.ref = "tensorflow-lite" }
+tensorflow-lite-support = { module = "org.tensorflow:tensorflow-lite-support", version.ref = "tensorflow-lite-support" }
+
+androidx-espresso-core = { module = "androidx.test.espresso:espresso-core", version.ref = "espresso-core" }
+androidx-test-ext-junit = { group = "androidx.test.ext", name = "junit", version.ref = "androidx-test-ext-junit" }
+ui-test-manifest = { group = "androidx.compose.ui", name = "ui-test-manifest" }
+ui-test-junit4 = { group = "androidx.compose.ui", name = "ui-test-junit4" }
+
+
+
+[plugins]
+com-android-application = { id = "com.android.application", version.ref = "agp" }
+org-jetbrains-kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "org-jetbrains-kotlin-android" }

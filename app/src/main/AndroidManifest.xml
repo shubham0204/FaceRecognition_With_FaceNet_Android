@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.ml.quaterion.facenetdetection">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
     <uses-feature
         android:name="android.hardware.camera"
@@ -16,7 +15,7 @@
         android:theme="@style/Theme.AppTheme">
 
         <activity
-            android:name="com.ml.quaterion.facenetdetection.MainActivity"
+            android:name="com.ml.shubham0204.facenetdetection.MainActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

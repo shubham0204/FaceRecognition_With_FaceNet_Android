@@ -1,4 +1,4 @@
-package com.ml.quaterion.facenetdetection.ml
+package com.ml.shubham0204.facenetdetection.ml
 
 class ModelInfo(
     val name : String ,
