@@ -6,11 +6,11 @@ plugins {
 
 android {
 
-    namespace = "com.ml.quaterion.facenetdetection"
+    namespace = "com.ml.shubham0204.facenetdetection"
     compileSdk = 34
 
     defaultConfig {
-        applicationId = "com.ml.quaterion.facenetdetection"
+        applicationId = "com.ml.shubham0204.facenetdetection"
         minSdk = 25
         targetSdk = 34
         versionCode = 1

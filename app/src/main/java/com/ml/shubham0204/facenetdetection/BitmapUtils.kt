@@ -7,10 +7,8 @@ import android.graphics.BitmapFactory
 import android.graphics.Matrix
 import android.graphics.Rect
 import android.net.Uri
-import android.os.ParcelFileDescriptor
 import androidx.exifinterface.media.ExifInterface
 import java.io.File
-import java.io.FileDescriptor
 import java.io.FileOutputStream
 
 // Helper class for operations on Bitmaps
@@ -43,11 +41,7 @@ class BitmapUtils {
             contentResolver : ContentResolver ,
             uri: Uri
         ): Bitmap {
-            val parcelFileDescriptor: ParcelFileDescriptor? = contentResolver.openFileDescriptor(uri, "r")
-            val fileDescriptor: FileDescriptor = parcelFileDescriptor!!.fileDescriptor
-            val image: Bitmap = BitmapFactory.decodeFileDescriptor(fileDescriptor)
-            parcelFileDescriptor.close()
-            return image
+            return BitmapFactory.decodeStream( contentResolver.openInputStream( uri ) )
         }
 
 
@@ -85,9 +79,9 @@ class BitmapUtils {
             imageBitmap =
                 when (exifInterface.getAttributeInt( ExifInterface.TAG_ORIENTATION ,
                     ExifInterface.ORIENTATION_UNDEFINED )) {
-                    ExifInterface.ORIENTATION_ROTATE_90 -> BitmapUtils.rotateBitmap( imageBitmap , 90f )
-                    ExifInterface.ORIENTATION_ROTATE_180 -> BitmapUtils.rotateBitmap( imageBitmap , 180f )
-                    ExifInterface.ORIENTATION_ROTATE_270 -> BitmapUtils.rotateBitmap( imageBitmap , 270f )
+                    ExifInterface.ORIENTATION_ROTATE_90 -> rotateBitmap( imageBitmap , 90f )
+                    ExifInterface.ORIENTATION_ROTATE_180 -> rotateBitmap( imageBitmap , 180f )
+                    ExifInterface.ORIENTATION_ROTATE_270 -> rotateBitmap( imageBitmap , 270f )
                     else -> imageBitmap
                 }
             return imageBitmap

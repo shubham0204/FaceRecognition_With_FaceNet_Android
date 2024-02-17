@@ -17,10 +17,6 @@ import androidx.activity.viewModels
 import androidx.annotation.OptIn
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ExperimentalGetImage
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -29,7 +25,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Cameraswitch
 import androidx.compose.material.icons.filled.Videocam
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -37,7 +32,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
@@ -52,10 +46,12 @@ import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.app.ActivityCompat
 import androidx.documentfile.provider.DocumentFile
-import com.ml.quaterion.facenetdetection.R
 import com.ml.shubham0204.facenetdetection.ml.Annotator
 import com.ml.shubham0204.facenetdetection.ml.FaceNetModel
 import com.ml.shubham0204.facenetdetection.ml.Models
+import com.ml.shubham0204.facenetdetection.ui.components.AppAlertDialog
+import com.ml.shubham0204.facenetdetection.ui.components.DelayedVisibility
+import com.ml.shubham0204.facenetdetection.ui.components.createAlertDialog
 import com.ml.shubham0204.facenetdetection.ui.theme.AppTheme
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -84,16 +80,6 @@ class MainActivity : ComponentActivity() {
 
     private val cameraPermissionStatus = mutableStateOf( false )
     private val cameraFacing = mutableIntStateOf( CameraSelector.LENS_FACING_BACK )
-    private val alertDialogShowStatus = mutableStateOf( false )
-    private val alertDialogObjectParams = object {
-        var title = ""
-        var text = ""
-        var positiveButtonText = ""
-        var negativeButtonText = ""
-        lateinit var positiveButtonOnClick: (() -> Unit)
-        lateinit var negativeButtonOnClick: (() -> Unit)
-    }
-
 
     // <----------------------- User controls --------------------------->
 
@@ -117,9 +103,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
 
         setContent {
-            ActivityUI {
-
-            }
+            ActivityUI()
         }
 
         // We'll only require the CAMERA permission from the user.
@@ -135,25 +119,23 @@ class MainActivity : ComponentActivity() {
     }
 
     @Composable
-    private fun ActivityUI(
-        onNavigateToConfigureScreen: (() -> Unit)
-    ) {
+    private fun ActivityUI() {
         AppTheme {
             Surface( modifier = Modifier
                 .background(Color.White)
                 .fillMaxSize() ) {
                 Box {
                     Camera()
-                    ShowAlertDialog()
+                    AppAlertDialog()
                     ProgressOverlay()
-                    Buttons( onNavigateToConfigureScreen )
+                    Controls()
                 }
             }
         }
     }
 
     @Composable
-    private fun Buttons( onNavigateToConfigureScreen: (() -> Unit) ) {
+    private fun Controls() {
         val isDetectingFaces by appViewModel.isDetectingFaces.observeAsState()
         Row {
             /*
@@ -334,53 +316,6 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun createAlertDialog(
-        dialogTitle: String ,
-        dialogText: String ,
-        dialogPositiveButtonText: String,
-        dialogNegativeButtonText: String,
-        onPositiveButtonClick: (() -> Unit) ,
-        onNegativeButtonClick: (() -> Unit)
-    ) {
-        alertDialogObjectParams.title = dialogTitle
-        alertDialogObjectParams.text = dialogText
-        alertDialogObjectParams.positiveButtonOnClick = onPositiveButtonClick
-        alertDialogObjectParams.negativeButtonOnClick = onNegativeButtonClick
-        alertDialogObjectParams.positiveButtonText = dialogPositiveButtonText
-        alertDialogObjectParams.negativeButtonText = dialogNegativeButtonText
-        alertDialogShowStatus.value = true
-    }
-
-    @Composable
-    private fun ShowAlertDialog() {
-        val visible by remember{ alertDialogShowStatus }
-        if( visible ) {
-            AlertDialog(
-                title = { Text(text = alertDialogObjectParams.title) },
-                text = { Text(text = alertDialogObjectParams.text)},
-                onDismissRequest = { /* All alert dialogs are non-cancellable */ },
-                confirmButton = {
-                    TextButton(onClick = {
-                        alertDialogShowStatus.value = false
-                        alertDialogObjectParams.positiveButtonOnClick()
-                    }) {
-                        Text(text = alertDialogObjectParams.positiveButtonText)
-                    }
-                },
-                dismissButton = {
-                    TextButton(onClick = {
-                        alertDialogShowStatus.value = false
-                        alertDialogObjectParams.negativeButtonOnClick()
-                    }) {
-                        Text(text = alertDialogObjectParams.negativeButtonText)
-                    }
-                }
-            )
-        }
-    }
-
-
-
     @OptIn(ExperimentalGetImage::class)
     @Composable
     private fun Camera() {
@@ -419,16 +354,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    @Composable
-    private fun DelayedVisibility( visible: Boolean , content: @Composable (() -> Unit) ) {
-        AnimatedVisibility(
-            visible = visible ,
-            enter = fadeIn(animationSpec = tween(1000)),
-            exit = fadeOut(animationSpec = tween(1000))
-        ) {
-            content()
-        }
-    }
+
 
     @Composable
     private fun ProgressOverlay() {
@@ -489,6 +415,5 @@ class MainActivity : ComponentActivity() {
         }
         sharedPreferences.edit().putBoolean( sharedPreferenceIsDataStored , true ).apply()
     }
-
 
 }
