@@ -18,12 +18,16 @@ import androidx.annotation.OptIn
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ExperimentalGetImage
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Cameraswitch
+import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material.icons.filled.Videocam
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -43,6 +47,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.app.ActivityCompat
 import androidx.documentfile.provider.DocumentFile
@@ -66,22 +71,14 @@ import java.io.ObjectOutputStream
 
 class MainActivity : ComponentActivity() {
 
-    private var isSerializedDataStored = false
-
     // Serialized data will be stored ( in app's private storage ) with this filename.
     private val serializedDataFilename = "image_data"
 
-    // Shared Pref key to check if the data was stored.
-    private val sharedPreferenceIsDataStored = "is_data_stored"
-
     private val appViewModel by viewModels<AppViewModel>()
     private lateinit var fileReader : FileReader
-    private lateinit var sharedPreferences: SharedPreferences
 
     private val cameraPermissionStatus = mutableStateOf( false )
     private val cameraFacing = mutableIntStateOf( CameraSelector.LENS_FACING_BACK )
-
-    // <----------------------- User controls --------------------------->
 
     // Use the device's GPU to perform faster computations.
     // Refer https://www.tensorflow.org/lite/performance/gpu
@@ -110,7 +107,8 @@ class MainActivity : ComponentActivity() {
         // For scoped storage, particularly for accessing documents, we won't require WRITE_EXTERNAL_STORAGE or
         // READ_EXTERNAL_STORAGE permissions. See https://developer.android.com/training/data-storage
         if ( ActivityCompat.checkSelfPermission( this , Manifest.permission.CAMERA ) != PackageManager.PERMISSION_GRANTED ) {
-            requestCameraPermission()
+            // Request camera permission
+            cameraPermissionLauncher.launch( Manifest.permission.CAMERA )
         }
         else {
             cameraPermissionStatus.value = true
@@ -144,11 +142,16 @@ class MainActivity : ComponentActivity() {
                 Text(text = "Configure")
             }*/
             Button(
-                onClick = { onStartDetectionClick() } ,
+                onClick = {
+                    if ( isDetectingFaces == true ) {
+                        appViewModel.isDetectingFaces.value = false
+                    } else {
+                        startDetection()
+                    }} ,
                 colors = ButtonDefaults.buttonColors( containerColor = if( isDetectingFaces == true ) { Color.Red } else { MaterialTheme.colorScheme.primaryContainer } )
             ) {
-                Icon(imageVector = Icons.Default.Videocam, contentDescription = "Start Detection")
-                Text(text = "Start Detection")
+                Icon(imageVector = if( isDetectingFaces == true ) { Icons.Default.Stop } else { Icons.Default.Videocam }, contentDescription = "Start Detection")
+                Text(text = if( isDetectingFaces == true ) { "Stop Detection" } else { "Start Detection" })
             }
             Button(
                 onClick = {
@@ -168,10 +171,9 @@ class MainActivity : ComponentActivity() {
     }
 
 
-    private val onStartDetectionClick: ( () -> Unit ) = {
-        sharedPreferences = getSharedPreferences( getString( R.string.app_name ) , Context.MODE_PRIVATE )
-        isSerializedDataStored = sharedPreferences.getBoolean( sharedPreferenceIsDataStored , false )
-        if ( !isSerializedDataStored ) {
+    private val startDetection: ( () -> Unit ) = {
+        val serializedDataFile = File( filesDir , serializedDataFilename )
+        if ( !serializedDataFile.exists() ) {
             createAlertDialog(
                 "Select Images Directory" ,
                 "As mentioned in the project\'s README file, please select a directory which contains the images." ,
@@ -200,6 +202,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+
     private fun startDetectionWithStoredData() {
         appViewModel.startProgressOverlay( "\uD83D\uDCF1 Initializing FaceNet ..." )
         CoroutineScope( Dispatchers.Default ).launch {
@@ -223,6 +226,7 @@ class MainActivity : ComponentActivity() {
         appViewModel.isDetectingFaces.value = true
     }
 
+
     private fun startDetectionBySelectingImages() {
         appViewModel.startProgressOverlay( "\uD83D\uDCF1 Initializing FaceNet ..." )
         CoroutineScope( Dispatchers.Default ).launch {
@@ -240,18 +244,16 @@ class MainActivity : ComponentActivity() {
                     )
                 val tree = DocumentFile.fromTreeUri(this@MainActivity , childrenUri)
                 val images = ArrayList<Pair<String,Bitmap>>()
-                var errorFound = false
                 var errorMessage = ""
                 if ( tree!!.listFiles().isNotEmpty()) {
                     for ( doc in tree.listFiles() ) {
-                        if ( doc.isDirectory && !errorFound ) {
+                        if ( doc.isDirectory && errorMessage.isEmpty() ) {
                             val name = doc.name!!
                             for ( imageDocFile in doc.listFiles() ) {
                                 try {
                                     images.add( Pair( name , BitmapUtils.getFixedBitmap( this@MainActivity , imageDocFile.uri ) ) )
                                 }
                                 catch ( e : Exception ) {
-                                    errorFound = true
                                     errorMessage = "Could not parse an image in $name directory. Make sure that the file structure is " +
                                             "as described in the README of the project and then restart the app."
                                     break
@@ -259,21 +261,24 @@ class MainActivity : ComponentActivity() {
                             }
                         }
                         else {
-                            errorFound = true
                             errorMessage = "The selected folder should contain only directories. Make sure that the file structure is " +
                                     "as described in the README of the project and then restart the app."
                         }
                     }
                 }
                 else {
-                    errorFound = true
                     errorMessage = "The selected folder doesn't contain any directories. Make sure that the file structure is " +
                             "as described in the README of the project and then restart the app."
                 }
-                if ( !errorFound ) {
+                if ( errorMessage.isEmpty() ) {
                     appViewModel.updateProgressOverlay( "Reading images from selected directory ..." )
                     fileReader.run( images ) {
-                        saveSerializedImageData( it.embeddedFaces )
+                        val serializedDataFile = File( filesDir , serializedDataFilename )
+                        ObjectOutputStream( FileOutputStream( serializedDataFile )  ).apply {
+                            writeObject( it.embeddedFaces )
+                            flush()
+                            close()
+                        }
                         val annotator = Annotator()
                         annotator.initialize( it.embeddedFaces )
                         runBlocking( Dispatchers.Main ){
@@ -344,7 +349,9 @@ class MainActivity : ComponentActivity() {
                     Text( text = "Allow Camera Permissions" )
                     Text( text = "The app cannot work without the camera permission." )
                     Button(
-                        onClick = { requestCameraPermission() } ,
+                        onClick = {
+                            cameraPermissionLauncher.launch( Manifest.permission.CAMERA )
+                                  } ,
                         modifier = Modifier.align( Alignment.CenterHorizontally )
                     ) {
                         Text(text = "Allow")
@@ -353,7 +360,6 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
-
 
 
     @Composable
@@ -365,55 +371,50 @@ class MainActivity : ComponentActivity() {
                 color = Color.White.copy( alpha = 0.8f )
             ){
                 Box( modifier = Modifier.fillMaxSize() ) {
-                    Column( modifier = Modifier.align( Alignment.Center )) {
-                        Text( text = message ?: "" )
+                    Column(
+                        verticalArrangement = Arrangement.Center ,
+                        horizontalAlignment = Alignment.CenterHorizontally ,
+                        modifier = Modifier.fillMaxSize() ) {
                         CircularProgressIndicator()
+                        Spacer(modifier = Modifier.height(8.dp) )
+                        Text( text = message ?: "" )
                     }
                 }
             }
         }
     }
 
-    private fun requestCameraPermission() {
-        cameraPermissionLauncher.launch( Manifest.permission.CAMERA )
+    private fun camaraPermissionDialog() {
+        createAlertDialog(
+            "Camera Permission" ,
+            "The app couldn't function without the camera permission." ,
+            "ALLOW" ,
+            "CLOSE" ,
+            onPositiveButtonClick = {
+                cameraPermissionLauncher.launch( Manifest.permission.CAMERA )
+            } ,
+            onNegativeButtonClick = {
+                finish()
+            }
+        )
     }
+
+
     private val cameraPermissionLauncher: ActivityResultLauncher<String> =
         registerForActivityResult( ActivityResultContracts.RequestPermission() ) { isGranted ->
             if ( isGranted ) { cameraPermissionStatus.value = true }
-            else {
-                createAlertDialog(
-                    "Camera Permission" ,
-                    "The app couldn't function without the camera permission." ,
-                    "ALLOW" ,
-                    "CLOSE" ,
-                    onPositiveButtonClick = {
-                        requestCameraPermission()
-                    } ,
-                    onNegativeButtonClick = {
-                        finish()
-                    }
-                )
-            }
+            else { camaraPermissionDialog() }
         }
+
 
     private val chooseDirectoryLauncher = registerForActivityResult( ActivityResultContracts.StartActivityForResult() ) {
         processDirBlock(it.data?.data)
     }
+
+
     private fun launchChooseDirectoryIntent( onResult: ((Uri?) -> Unit ) ) {
         this.processDirBlock = onResult
         chooseDirectoryLauncher.launch( Intent( Intent.ACTION_OPEN_DOCUMENT_TREE ) )
-    }
-
-    private fun saveSerializedImageData(
-        data : List<Pair<String,FloatArray>>
-    ) {
-        val serializedDataFile = File( filesDir , serializedDataFilename )
-        ObjectOutputStream( FileOutputStream( serializedDataFile )  ).apply {
-            writeObject( data )
-            flush()
-            close()
-        }
-        sharedPreferences.edit().putBoolean( sharedPreferenceIsDataStored , true ).apply()
     }
 
 }

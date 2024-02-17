@@ -1,15 +1,15 @@
 [versions]
-agp = "8.2.0"
-org-jetbrains-kotlin-android = "1.9.20"
+agp = "8.2.2"
+org-jetbrains-kotlin-android = "1.9.22"
 
 camerax = "1.3.1"
 ktx = "1.12.0"
-lifecycle-runtime-ktx = "2.6.2"
+lifecycle-runtime-ktx = "2.7.0"
 activity-compose = "1.8.2"
-navigation-compose = "2.7.6"
+navigation-compose = "2.7.7"
 
 # Jetpack Compose
-compose-bom = "2023.10.01"
+compose-bom = "2024.02.00"
 compose-fragment = "1.6.2"
 
 # DocumentFile and ExifInterface
@@ -23,13 +23,11 @@ face-detection = "16.1.5"
 kotlinx-coroutines = "1.7.3"
 
 # TensorFlow Lite
-tensorflow-lite = "2.11.0"
-tensorflow-lite-support = "0.4.2"
+tensorflow-lite = "2.12.0"
+tensorflow-lite-support = "0.4.3"
 
 androidx-test-ext-junit = "1.1.5"
 espresso-core = "3.5.1"
-
-
 
 
 [libraries]
@@ -74,7 +72,6 @@ androidx-espresso-core = { module = "androidx.test.espresso:espresso-core", vers
 androidx-test-ext-junit = { group = "androidx.test.ext", name = "junit", version.ref = "androidx-test-ext-junit" }
 ui-test-manifest = { group = "androidx.compose.ui", name = "ui-test-manifest" }
 ui-test-junit4 = { group = "androidx.compose.ui", name = "ui-test-junit4" }
-
 
 
 [plugins]

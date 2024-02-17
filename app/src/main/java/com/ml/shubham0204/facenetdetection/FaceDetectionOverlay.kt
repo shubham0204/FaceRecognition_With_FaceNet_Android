@@ -40,11 +40,11 @@ class FaceDetectionOverlay(
     private val appViewModel: AppViewModel
 ) : FrameLayout( context ) {
 
-    private var t1 = 0L
     private var overlayWidth: Int = 0
     private var overlayHeight: Int = 0
     private val realTimeOpts = FaceDetectorOptions.Builder()
         .setPerformanceMode( FaceDetectorOptions.PERFORMANCE_MODE_FAST )
+        .setMinFaceSize( 0.4f )
         .build()
     private val detector = FaceDetection.getClient(realTimeOpts)
 
@@ -59,10 +59,6 @@ class FaceDetectionOverlay(
     private lateinit var previewView: PreviewView
 
     var predictions : Array<Prediction> = arrayOf()
-
-    private var timeInit = System.currentTimeMillis()
-    private var numFrames = 0L
-    private var fps = 0
 
 
     init {
@@ -185,7 +181,6 @@ class FaceDetectionOverlay(
         cameraFrameBitmap : Bitmap
     ){
         withContext( Dispatchers.Default ) {
-            t1 = System.currentTimeMillis()
             val predictions = ArrayList<Prediction>()
             faces.filter{ BitmapUtils.validateRect( cameraFrameBitmap , it.boundingBox ) }
                  .forEach {
@@ -206,8 +201,6 @@ class FaceDetectionOverlay(
             withContext( Dispatchers.Main ) {
                 this@FaceDetectionOverlay.predictions = predictions.toTypedArray()
                 boundingBoxOverlay.invalidate()
-                numFrames += 1
-                updateFPS()
                 isProcessing = false
             }
         }
@@ -225,23 +218,18 @@ class FaceDetectionOverlay(
                 predictions.add(
                     Prediction(
                         box ,
-                        "Face: ${it.trackingId}" ,
+                        "" ,
                     )
                 )
             }
             withContext( Dispatchers.Main ) {
                 this@FaceDetectionOverlay.predictions = predictions.toTypedArray()
                 boundingBoxOverlay.invalidate()
-                numFrames += 1
-                updateFPS()
                 isProcessing = false
             }
         }
     }
 
-    private fun updateFPS() {
-        fps = ( numFrames / ((System.currentTimeMillis() - timeInit) / 1000)).toInt()
-    }
 
     data class Prediction(
         var bbox : RectF,
@@ -281,7 +269,6 @@ class FaceDetectionOverlay(
                     textPaint
                 )
             }
-            canvas.drawText( fps.toString() , 100f , 200f , textPaint )
         }
 
     }

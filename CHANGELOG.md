@@ -1,5 +1,0 @@
-- Removed `int8` quantized models
-- `validateRect` added to `BitmapUtils`
-- Added logic to change camera facing at runtime in `FaceDetectionOverlay`
-- `runBlocking` in `FileReader.run` now uses `Dispatchers.Default`
-- Added button in `MainActivity` to change camera facing, and `update` block in `AndroidView` for updating camera facing in `FaceDetectionOverlay`

@@ -1,13 +1,18 @@
 package com.ml.shubham0204.facenetdetection.ml
 
+
+class ModelInfo(
+    val name : String ,
+    val assetsFilename : String ,
+    val cosineThreshold : Float ,
+    val l2Threshold : Float ,
+    val outputDims : Int ,
+    val inputDims : Int ,
+    val description: String = "" )
+
 class Models {
 
     companion object {
-
-        enum class DistanceMetrics {
-            COSINE ,
-            L2_NORM
-        }
 
         val FACENET = ModelInfo(
             "FaceNet" ,
@@ -27,12 +32,10 @@ class Models {
             160
         )
 
-
         val models = arrayOf(
             FACENET ,
             FACENET_512
         )
-
 
     }
 
