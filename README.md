@@ -8,10 +8,9 @@ We don't need to modify the app/retrain any ML model to add more people ( subjec
 
 ![banner](https://github.com/shubham0204/FaceRecognition_With_FaceNet_Android/assets/41076823/5922415d-ff61-4276-9817-7e472ebac7c4)
 
-*Message from the developer,*
+Do check an enhanced version of this project,
 
- > You may also like my latest project -> [**Age + Gender Estimation in Android with TensorFlow**](https://github.com/shubham0204/Age-Gender_Estimation_TF-Android). 
- > I'm open for **freelancing** in **Android + ML projects** as well as **Technical Blogging**. You may send me an email/message on [**Google Chat**](https://mail.google.com/chat) at **equipintelligence@gmail.com**.
+* [On-Device Face Recognition In Android](https://github.com/shubham0204/OnDevice-Face-Recognition-Android)  
  
  
 ### Features
